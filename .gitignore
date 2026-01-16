@@ -163,3 +163,9 @@ models/
 
 # API keys
 secrets.properties
+# Ignore temporary files
+nul
+tmpclaude-*
+.claude/
+test-screenshots/
+emulator_screenshot.png
