@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- SMS bubble icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,27c-14.9,0 -27,10.5 -27,23.5c0,7.1 3.6,13.5 9.4,17.9l-2.4,10.6l11.9,-5.9c2.5,0.6 5.2,0.9 8.1,0.9c14.9,0 27,-10.5 27,-23.5S68.9,27 54,27zM43,55c-2.2,0 -4,-1.8 -4,-4s1.8,-4 4,-4s4,1.8 4,4S45.2,55 43,55zM54,55c-2.2,0 -4,-1.8 -4,-4s1.8,-4 4,-4s4,1.8 4,4S56.2,55 54,55zM65,55c-2.2,0 -4,-1.8 -4,-4s1.8,-4 4,-4s4,1.8 4,4S67.2,55 65,55z"/>
+    <!-- Shield overlay -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M72,60l8,-4v-8l-8,-4l-8,4v8L72,60zM72,48l4,2v4l-4,2l-4,-2v-4L72,48z"/>
+</vector>
