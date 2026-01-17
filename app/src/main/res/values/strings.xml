@@ -2,8 +2,18 @@
 <resources>
     <string name="app_name">CellophaneSMS</string>
 
-    <!-- Main Screen -->
+    <!-- Navigation -->
+    <string name="dashboard">Dashboard</string>
     <string name="messages">Messages</string>
+
+    <!-- Dashboard Screen -->
+    <string name="total_messages">Total Messages</string>
+    <string name="total_senders">Senders</string>
+    <string name="messages_by_sender">Messages by Sender</string>
+    <string name="message_count">%d messages</string>
+    <string name="no_data_yet">No data yet</string>
+
+    <!-- Main Screen -->
     <string name="new_message">New Message</string>
     <string name="settings">Settings</string>
     <string name="search">Search</string>

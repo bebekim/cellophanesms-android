@@ -1,5 +1,6 @@
 package com.cellophanemail.sms.data.repository
 
+import com.cellophanemail.sms.data.contact.ContactResolver
 import com.cellophanemail.sms.data.local.dao.MessageDao
 import com.cellophanemail.sms.data.local.dao.ThreadDao
 import com.cellophanemail.sms.data.local.entity.MessageEntity
@@ -40,6 +41,9 @@ class MessageRepositoryTest {
     @MockK
     private lateinit var encryption: MessageEncryption
 
+    @MockK
+    private lateinit var contactResolver: ContactResolver
+
     private lateinit var gson: Gson
     private lateinit var repository: MessageRepository
 
@@ -56,7 +60,10 @@ class MessageRepositoryTest {
             String(firstArg<ByteArray>(), Charsets.UTF_8)
         }
 
-        repository = MessageRepository(messageDao, threadDao, api, encryption, gson)
+        // Default contact resolver behavior - return null (no contact found)
+        every { contactResolver.lookupContact(any()) } returns null
+
+        repository = MessageRepository(messageDao, threadDao, api, encryption, gson, contactResolver)
     }
 
     @After

@@ -19,14 +19,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
@@ -35,11 +41,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -47,10 +56,17 @@ import com.cellophanemail.sms.R
 import com.cellophanemail.sms.domain.model.Thread
 import com.cellophanemail.sms.ui.components.ThreadCard
 import com.cellophanemail.sms.ui.compose.ComposeActivity
+import com.cellophanemail.sms.ui.dashboard.DashboardScreen
 import com.cellophanemail.sms.ui.settings.SettingsActivity
 import com.cellophanemail.sms.ui.theme.CellophaneSMSTheme
 import com.cellophanemail.sms.ui.thread.ThreadActivity
 import dagger.hilt.android.AndroidEntryPoint
+
+private data class NavigationItem(
+    val title: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector
+)
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -76,7 +92,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CellophaneSMSTheme {
-                MainScreen(
+                MainScreenWithNavigation(
                     onThreadClick = { thread ->
                         openThread(thread)
                     },
@@ -146,11 +162,92 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(
-    viewModel: MainViewModel = hiltViewModel(),
+fun MainScreenWithNavigation(
     onThreadClick: (Thread) -> Unit,
     onComposeClick: () -> Unit,
     onSettingsClick: () -> Unit
+) {
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+
+    val navigationItems = listOf(
+        NavigationItem(
+            title = stringResource(R.string.dashboard),
+            selectedIcon = Icons.Filled.Home,
+            unselectedIcon = Icons.Outlined.Home
+        ),
+        NavigationItem(
+            title = stringResource(R.string.messages),
+            selectedIcon = Icons.Filled.Email,
+            unselectedIcon = Icons.Outlined.Email
+        )
+    )
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(navigationItems[selectedTabIndex].title) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(Icons.Default.Settings, stringResource(R.string.settings))
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            NavigationBar {
+                navigationItems.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        icon = {
+                            Icon(
+                                imageVector = if (selectedTabIndex == index) {
+                                    item.selectedIcon
+                                } else {
+                                    item.unselectedIcon
+                                },
+                                contentDescription = item.title
+                            )
+                        },
+                        label = { Text(item.title) }
+                    )
+                }
+            }
+        },
+        floatingActionButton = {
+            if (selectedTabIndex == 1) {
+                FloatingActionButton(
+                    onClick = onComposeClick,
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.new_message),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            when (selectedTabIndex) {
+                0 -> DashboardScreen()
+                1 -> MessagesScreen(onThreadClick = onThreadClick)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MessagesScreen(
+    viewModel: MainViewModel = hiltViewModel(),
+    onThreadClick: (Thread) -> Unit
 ) {
     val threads by viewModel.threads.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -159,121 +256,85 @@ fun MainScreen(
 
     var isSearchActive by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.messages)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                actions = {
-                    IconButton(onClick = { isSearchActive = true }) {
-                        Icon(Icons.Default.Search, stringResource(R.string.search))
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, stringResource(R.string.settings))
-                    }
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Search Bar
+        SearchBar(
+            query = searchQuery,
+            onQueryChange = { viewModel.setSearchQuery(it) },
+            onSearch = { /* Already searching on change */ },
+            active = isSearchActive,
+            onActiveChange = { isSearchActive = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = if (isSearchActive) 0.dp else 16.dp),
+            placeholder = { Text(stringResource(R.string.search)) },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null)
+            }
+        ) {
+            LazyColumn {
+                items(searchResults) { thread ->
+                    ThreadCard(
+                        thread = thread,
+                        onClick = {
+                            isSearchActive = false
+                            onThreadClick(thread)
+                        }
+                    )
                 }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onComposeClick,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = stringResource(R.string.new_message),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
             }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-        ) {
-            // Search Bar
-            if (isSearchActive) {
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChange = { viewModel.setSearchQuery(it) },
-                    onSearch = { /* Already searching on change */ },
-                    active = true,
-                    onActiveChange = { isSearchActive = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    placeholder = { Text(stringResource(R.string.search)) }
+
+        // Main Content
+        when (uiState) {
+            is MainUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    LazyColumn {
-                        items(searchResults) { thread ->
-                            ThreadCard(
-                                thread = thread,
-                                onClick = {
-                                    isSearchActive = false
-                                    onThreadClick(thread)
-                                }
-                            )
-                        }
-                    }
+                    CircularProgressIndicator()
                 }
             }
 
-            // Main Content
-            when (uiState) {
-                is MainUiState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                is MainUiState.Success -> {
-                    if (threads.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.no_messages),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(
-                                items = threads,
-                                key = { it.threadId }
-                            ) { thread ->
-                                ThreadCard(
-                                    thread = thread,
-                                    onClick = { onThreadClick(thread) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                is MainUiState.Error -> {
+            is MainUiState.Success -> {
+                if (threads.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = (uiState as MainUiState.Error).message,
+                            text = stringResource(R.string.no_messages),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(
+                            items = threads,
+                            key = { it.threadId }
+                        ) { thread ->
+                            ThreadCard(
+                                thread = thread,
+                                onClick = { onThreadClick(thread) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            is MainUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = (uiState as MainUiState.Error).message,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }

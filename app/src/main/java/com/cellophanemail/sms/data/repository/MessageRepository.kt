@@ -1,5 +1,6 @@
 package com.cellophanemail.sms.data.repository
 
+import com.cellophanemail.sms.data.contact.ContactResolver
 import com.cellophanemail.sms.data.local.dao.MessageDao
 import com.cellophanemail.sms.data.local.dao.ThreadDao
 import com.cellophanemail.sms.data.local.entity.MessageEntity
@@ -24,7 +25,8 @@ class MessageRepository @Inject constructor(
     private val threadDao: ThreadDao,
     private val api: CellophoneMailApi,
     private val encryption: MessageEncryption,
-    private val gson: Gson
+    private val gson: Gson,
+    private val contactResolver: ContactResolver
 ) {
 
     // Message operations
@@ -76,11 +78,12 @@ class MessageRepository @Inject constructor(
 
         var thread = threadDao.getById(threadId)
         if (thread == null) {
+            val contactInfo = contactResolver.lookupContact(normalizedAddress)
             thread = ThreadEntity(
                 threadId = threadId,
                 address = normalizedAddress,
-                contactName = null, // TODO: Lookup contact name
-                contactPhotoUri = null,
+                contactName = contactInfo?.displayName,
+                contactPhotoUri = contactInfo?.photoUri,
                 lastMessageId = null,
                 lastMessageTime = System.currentTimeMillis(),
                 lastMessagePreview = "",
@@ -174,12 +177,13 @@ class MessageRepository @Inject constructor(
                 )
             )
         } else {
+            val contactInfo = contactResolver.lookupContact(message.address)
             threadDao.insert(
                 ThreadEntity(
                     threadId = message.threadId,
                     address = message.address,
-                    contactName = null,
-                    contactPhotoUri = null,
+                    contactName = contactInfo?.displayName,
+                    contactPhotoUri = contactInfo?.photoUri,
                     lastMessageId = message.id,
                     lastMessageTime = message.timestamp,
                     lastMessagePreview = preview,
