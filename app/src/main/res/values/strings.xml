@@ -3,6 +3,7 @@
     <string name="app_name">CellophaneSMS</string>
 
     <!-- Navigation -->
+    <string name="contacts">Contacts</string>
     <string name="dashboard">Dashboard</string>
     <string name="messages">Messages</string>
 
@@ -12,6 +13,42 @@
     <string name="messages_by_sender">Messages by Sender</string>
     <string name="message_count">%d messages</string>
     <string name="no_data_yet">No data yet</string>
+
+    <!-- Analysis Dashboard -->
+    <string name="scanning_messages">Scanning Messages</string>
+    <string name="scan_progress">%1$d of %2$d messages</string>
+    <string name="scan_complete">Scan Complete</string>
+    <string name="start_scan">Start Scan</string>
+    <string name="top_risk_relationships">Top Risk Relationships</string>
+    <string name="filtered_count">%d filtered</string>
+    <string name="four_horsemen_detected">Four Horsemen Detected</string>
+    <string name="no_risks_detected">No risks detected yet</string>
+    <string name="risk_level_high">High Risk</string>
+    <string name="risk_level_medium">Medium Risk</string>
+    <string name="risk_level_low">Low Risk</string>
+    <string name="dominant_pattern">Dominant: %s</string>
+    <string name="analysis_overview">Analysis Overview</string>
+    <string name="initial_scan_required">Initial scan required</string>
+    <string name="tap_to_analyze">Tap to analyze your message history</string>
+
+    <!-- 2x2 Message Matrix -->
+    <string name="message_matrix">Message Analysis</string>
+    <string name="matrix_actionable">Actionable</string>
+    <string name="matrix_noise">Noise</string>
+    <string name="matrix_toxic">Toxic</string>
+    <string name="matrix_safe">Safe</string>
+    <string name="toxic_logistics">Needs Review</string>
+    <string name="toxic_logistics_desc">Important but harmful</string>
+    <string name="toxic_noise">Filtered Out</string>
+    <string name="toxic_noise_desc">Harmful, no info</string>
+    <string name="safe_logistics">Clear</string>
+    <string name="safe_logistics_desc">Important and safe</string>
+    <string name="safe_noise">Low Priority</string>
+    <string name="safe_noise_desc">Not important</string>
+    <string name="risk_senders">Risk Senders</string>
+    <string name="risk_senders_desc">Senders with toxic patterns</string>
+    <string name="signal_toxic_count">%d need review</string>
+    <string name="filtered_label">filtered</string>
 
     <!-- Main Screen -->
     <string name="new_message">New Message</string>

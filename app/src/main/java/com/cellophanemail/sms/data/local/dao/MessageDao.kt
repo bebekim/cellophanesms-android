@@ -49,4 +49,42 @@ interface MessageDao {
 
     @Query("SELECT COUNT(*) FROM messages WHERE thread_id = :threadId AND is_deleted = 0")
     suspend fun getMessageCount(threadId: String): Int
+
+    // Batch analysis queries
+
+    @Query("SELECT * FROM messages WHERE processing_state = 'PENDING' AND is_deleted = 0 ORDER BY timestamp ASC LIMIT :limit")
+    suspend fun getPendingMessages(limit: Int): List<MessageEntity>
+
+    @Query("SELECT * FROM messages WHERE timestamp > :since AND is_deleted = 0 ORDER BY timestamp ASC LIMIT :limit")
+    suspend fun getMessagesSince(since: Long, limit: Int): List<MessageEntity>
+
+    @Query("SELECT * FROM messages WHERE analyzed_at IS NULL AND is_deleted = 0 ORDER BY timestamp ASC LIMIT :limit")
+    suspend fun getUnanalyzedMessages(limit: Int): List<MessageEntity>
+
+    @Query("SELECT COUNT(*) FROM messages WHERE processing_state = 'PENDING' AND is_deleted = 0")
+    suspend fun getPendingCount(): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE analyzed_at IS NULL AND is_deleted = 0")
+    suspend fun getUnanalyzedCount(): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE is_deleted = 0")
+    suspend fun getTotalMessageCount(): Int
+
+    @Query("SELECT MAX(timestamp) FROM messages WHERE analyzed_at IS NOT NULL")
+    suspend fun getLastAnalyzedMessageTimestamp(): Long?
+
+    @Query("SELECT * FROM messages WHERE address = :address AND is_deleted = 0 ORDER BY timestamp DESC")
+    fun getMessagesBySender(address: String): Flow<List<MessageEntity>>
+
+    @Query("SELECT * FROM messages WHERE address = :address AND is_filtered = 1 AND is_deleted = 0 ORDER BY timestamp DESC")
+    fun getFilteredMessagesBySender(address: String): Flow<List<MessageEntity>>
+
+    @Query("SELECT COUNT(*) FROM messages WHERE is_filtered = 1 AND is_deleted = 0")
+    suspend fun getFilteredCount(): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE is_filtered = 1 AND is_deleted = 0")
+    fun observeFilteredCount(): Flow<Int>
+
+    @Update
+    suspend fun updateAll(messages: List<MessageEntity>)
 }

@@ -21,10 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -56,6 +58,7 @@ import com.cellophanemail.sms.R
 import com.cellophanemail.sms.domain.model.Thread
 import com.cellophanemail.sms.ui.components.ThreadCard
 import com.cellophanemail.sms.ui.compose.ComposeActivity
+import com.cellophanemail.sms.ui.contacts.ContactsScreen
 import com.cellophanemail.sms.ui.dashboard.DashboardScreen
 import com.cellophanemail.sms.ui.settings.SettingsActivity
 import com.cellophanemail.sms.ui.theme.CellophaneSMSTheme
@@ -165,11 +168,18 @@ class MainActivity : ComponentActivity() {
 fun MainScreenWithNavigation(
     onThreadClick: (Thread) -> Unit,
     onComposeClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onContactClick: (String) -> Unit = {}
 ) {
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    // Default to Dashboard (index 1)
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(1) }
 
     val navigationItems = listOf(
+        NavigationItem(
+            title = stringResource(R.string.contacts),
+            selectedIcon = Icons.Filled.Person,
+            unselectedIcon = Icons.Outlined.Person
+        ),
         NavigationItem(
             title = stringResource(R.string.dashboard),
             selectedIcon = Icons.Filled.Home,
@@ -220,7 +230,8 @@ fun MainScreenWithNavigation(
             }
         },
         floatingActionButton = {
-            if (selectedTabIndex == 1) {
+            // Show FAB on Messages tab (index 2)
+            if (selectedTabIndex == 2) {
                 FloatingActionButton(
                     onClick = onComposeClick,
                     containerColor = MaterialTheme.colorScheme.primary
@@ -236,8 +247,9 @@ fun MainScreenWithNavigation(
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             when (selectedTabIndex) {
-                0 -> DashboardScreen()
-                1 -> MessagesScreen(onThreadClick = onThreadClick)
+                0 -> ContactsScreen(onContactClick = onContactClick)
+                1 -> DashboardScreen()
+                2 -> MessagesScreen(onThreadClick = onThreadClick)
             }
         }
     }

@@ -48,6 +48,19 @@ data class MessageEntity(
     @ColumnInfo(name = "analysis_reasoning")
     val analysisReasoning: String? = null,
 
+    val category: String? = null,
+
+    val severity: String? = null,
+
+    @ColumnInfo(name = "has_logistics")
+    val hasLogistics: Boolean = false,
+
+    @ColumnInfo(name = "engine_version")
+    val engineVersion: String? = null,
+
+    @ColumnInfo(name = "analyzed_at")
+    val analyzedAt: Long? = null,
+
     @ColumnInfo(name = "processing_state")
     val processingState: String = "PENDING",
 

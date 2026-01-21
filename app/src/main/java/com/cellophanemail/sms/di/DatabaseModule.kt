@@ -2,7 +2,9 @@ package com.cellophanemail.sms.di
 
 import android.content.Context
 import androidx.room.Room
+import com.cellophanemail.sms.data.local.dao.AnalysisStateDao
 import com.cellophanemail.sms.data.local.dao.MessageDao
+import com.cellophanemail.sms.data.local.dao.SenderSummaryDao
 import com.cellophanemail.sms.data.local.dao.ThreadDao
 import com.cellophanemail.sms.data.local.db.AppDatabase
 import dagger.Module
@@ -26,6 +28,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
         )
+            .addMigrations(AppDatabase.MIGRATION_1_2)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -40,5 +43,17 @@ object DatabaseModule {
     @Singleton
     fun provideThreadDao(database: AppDatabase): ThreadDao {
         return database.threadDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSenderSummaryDao(database: AppDatabase): SenderSummaryDao {
+        return database.senderSummaryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAnalysisStateDao(database: AppDatabase): AnalysisStateDao {
+        return database.analysisStateDao()
     }
 }

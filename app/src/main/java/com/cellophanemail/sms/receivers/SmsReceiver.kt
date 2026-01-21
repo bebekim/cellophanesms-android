@@ -9,6 +9,7 @@ import com.cellophanemail.sms.data.repository.MessageRepository
 import com.cellophanemail.sms.domain.model.Message
 import com.cellophanemail.sms.domain.model.ProcessingState
 import com.cellophanemail.sms.services.MessageProcessingService
+import com.cellophanemail.sms.workers.AnalysisWorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,9 @@ class SmsReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var messageRepository: MessageRepository
+
+    @Inject
+    lateinit var analysisWorkManager: AnalysisWorkManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -74,10 +78,11 @@ class SmsReceiver : BroadcastReceiver() {
 
                     // Store message immediately
                     messageRepository.insertMessage(message)
-
-                    // Start background processing
-                    MessageProcessingService.startProcessing(context, message.id)
                 }
+
+                // Trigger batch analysis via WorkManager
+                // This will analyze all pending messages in a batch
+                analysisWorkManager.triggerIncrementalAnalysis()
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing SMS", e)
             } finally {
