@@ -39,9 +39,16 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .addInterceptor(authInterceptor)
+            // Add ngrok header to bypass interstitial page (for development/testing)
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("ngrok-skip-browser-warning", "true")
+                    .build()
+                chain.proceed(request)
+            }
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS) // Increased for batch analysis
+            .writeTimeout(60, TimeUnit.SECONDS)
             .build()
     }
 

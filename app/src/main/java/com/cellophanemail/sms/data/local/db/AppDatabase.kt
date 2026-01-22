@@ -20,7 +20,7 @@ import com.cellophanemail.sms.data.local.entity.ThreadEntity
         SenderSummaryEntity::class,
         AnalysisStateEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -90,5 +90,38 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE messages ADD COLUMN analyzed_at INTEGER")
             }
         }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add sender_id_normalized for consistent sender aggregation
+                db.execSQL("ALTER TABLE messages ADD COLUMN sender_id_normalized TEXT NOT NULL DEFAULT ''")
+                // Add direction field (INBOUND/OUTBOUND)
+                db.execSQL("ALTER TABLE messages ADD COLUMN direction TEXT NOT NULL DEFAULT 'INBOUND'")
+                // Add horsemen confidence scores (JSON)
+                db.execSQL("ALTER TABLE messages ADD COLUMN horsemen_confidences TEXT")
+                // Add retry tracking for failed analysis
+                db.execSQL("ALTER TABLE messages ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE messages ADD COLUMN last_error TEXT")
+
+                // Create index on sender_id_normalized for fast aggregation
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_messages_sender_id_normalized ON messages(sender_id_normalized)")
+                // Create index on analyzed_at for incremental queries
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_messages_analyzed_at ON messages(analyzed_at)")
+
+                // Update existing messages to populate sender_id_normalized from address
+                // Note: This is a simplified normalization; full normalization happens at app layer
+                db.execSQL("""
+                    UPDATE messages
+                    SET sender_id_normalized = REPLACE(REPLACE(REPLACE(address, '+', ''), '-', ''), ' ', '')
+                    WHERE sender_id_normalized = ''
+                """)
+
+                // Update direction based on is_incoming flag
+                db.execSQL("UPDATE messages SET direction = 'INBOUND' WHERE is_incoming = 1")
+                db.execSQL("UPDATE messages SET direction = 'OUTBOUND' WHERE is_incoming = 0")
+            }
+        }
+
+        val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
     }
 }

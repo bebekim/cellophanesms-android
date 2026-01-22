@@ -9,10 +9,13 @@ import com.cellophanemail.sms.data.remote.api.CellophoneMailApi
 import com.cellophanemail.sms.data.remote.model.SmsAnalysisRequest
 import com.cellophanemail.sms.domain.model.Horseman
 import com.cellophanemail.sms.domain.model.Message
+import com.cellophanemail.sms.domain.model.MessageCategory
 import com.cellophanemail.sms.domain.model.ProcessingState
+import com.cellophanemail.sms.domain.model.Severity
 import com.cellophanemail.sms.domain.model.Thread
 import com.cellophanemail.sms.domain.model.ToxicityClass
 import com.cellophanemail.sms.util.MessageEncryption
+import com.cellophanemail.sms.util.PhoneNumberNormalizer
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -26,7 +29,8 @@ class MessageRepository @Inject constructor(
     private val api: CellophoneMailApi,
     private val encryption: MessageEncryption,
     private val gson: Gson,
-    private val contactResolver: ContactResolver
+    private val contactResolver: ContactResolver,
+    private val phoneNumberNormalizer: PhoneNumberNormalizer
 ) {
 
     // Message operations
@@ -196,10 +200,24 @@ class MessageRepository @Inject constructor(
     }
 
     private fun Message.toEntity(): MessageEntity {
+        // Derive category from classification and logistics
+        val category = when {
+            classification == null -> null
+            classification == ToxicityClass.SAFE && hasLogistics -> MessageCategory.SAFE_LOGISTICS.name
+            classification == ToxicityClass.SAFE -> MessageCategory.SAFE_NOISE.name
+            hasLogistics -> MessageCategory.TOXIC_LOGISTICS.name
+            else -> MessageCategory.TOXIC_NOISE.name
+        }
+
+        // Derive severity from toxicity score
+        val severity = toxicityScore?.let { Severity.fromScore(it).name }
+
         return MessageEntity(
             id = id,
             threadId = threadId,
             address = address,
+            senderIdNormalized = phoneNumberNormalizer.normalize(address),
+            direction = if (isIncoming) "INBOUND" else "OUTBOUND",
             timestamp = timestamp,
             isIncoming = isIncoming,
             originalContent = encryption.encrypt(originalContent),
@@ -210,7 +228,13 @@ class MessageRepository @Inject constructor(
             horsemenDetected = if (horsemen.isNotEmpty()) {
                 gson.toJson(horsemen.map { it.name })
             } else null,
+            horsemenConfidences = horsemenConfidences?.let { gson.toJson(it) },
             analysisReasoning = reasoning,
+            category = category,
+            severity = severity,
+            hasLogistics = hasLogistics,
+            engineVersion = engineVersion,
+            analyzedAt = analyzedAt,
             processingState = processingState.name,
             isSent = isSent,
             isRead = isRead,
@@ -228,10 +252,24 @@ class MessageRepository @Inject constructor(
             }
         } ?: emptyList()
 
+        // Parse horsemen confidences from JSON
+        val confidencesMap = horsemenConfidences?.let {
+            try {
+                @Suppress("UNCHECKED_CAST")
+                val map = gson.fromJson(it, Map::class.java) as? Map<String, Double>
+                map?.mapNotNull { (key, value) ->
+                    Horseman.fromString(key)?.let { horseman -> horseman to value.toFloat() }
+                }?.toMap()
+            } catch (e: Exception) {
+                null
+            }
+        }
+
         return Message(
             id = id,
             threadId = threadId,
             address = address,
+            senderIdNormalized = senderIdNormalized,
             timestamp = timestamp,
             isIncoming = isIncoming,
             originalContent = encryption.decrypt(originalContent),
@@ -240,7 +278,11 @@ class MessageRepository @Inject constructor(
             toxicityScore = toxicityScore,
             classification = ToxicityClass.fromString(classification),
             horsemen = horsemenList,
+            horsemenConfidences = confidencesMap,
             reasoning = analysisReasoning,
+            hasLogistics = hasLogistics,
+            engineVersion = engineVersion,
+            analyzedAt = analyzedAt,
             processingState = ProcessingState.fromString(processingState),
             isSent = isSent,
             isRead = isRead,
@@ -271,7 +313,7 @@ class MessageRepository @Inject constructor(
         }
 
         fun normalizePhoneNumber(address: String): String {
-            return address.replace(Regex("[^0-9+]"), "")
+            return PhoneNumberNormalizer.normalizeStatic(address)
         }
     }
 }

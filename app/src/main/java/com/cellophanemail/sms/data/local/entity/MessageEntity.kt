@@ -11,7 +11,9 @@ import java.util.UUID
     indices = [
         Index(value = ["thread_id"]),
         Index(value = ["address"]),
-        Index(value = ["timestamp"])
+        Index(value = ["sender_id_normalized"]),
+        Index(value = ["timestamp"]),
+        Index(value = ["analyzed_at"])
     ]
 )
 data class MessageEntity(
@@ -22,6 +24,19 @@ data class MessageEntity(
     val threadId: String,
 
     val address: String,
+
+    /**
+     * Normalized sender ID for consistent aggregation.
+     * Format: E.164 for international, or last 10 digits for AU numbers.
+     * Example: +61412345678 -> "0412345678" or "61412345678"
+     */
+    @ColumnInfo(name = "sender_id_normalized")
+    val senderIdNormalized: String,
+
+    /**
+     * Message direction: INBOUND or OUTBOUND
+     */
+    val direction: String = "INBOUND",
 
     val timestamp: Long,
 
@@ -42,16 +57,39 @@ data class MessageEntity(
 
     val classification: String? = null,
 
+    /**
+     * JSON array of detected horsemen names: ["CRITICISM", "CONTEMPT"]
+     */
     @ColumnInfo(name = "horsemen_detected")
     val horsemenDetected: String? = null,
+
+    /**
+     * JSON object of horsemen confidence scores: {"CRITICISM": 0.85, "CONTEMPT": 0.72}
+     */
+    @ColumnInfo(name = "horsemen_confidences")
+    val horsemenConfidences: String? = null,
 
     @ColumnInfo(name = "analysis_reasoning")
     val analysisReasoning: String? = null,
 
+    /**
+     * Message category after analysis:
+     * - SAFE_LOGISTICS: Important, safe message
+     * - SAFE_NOISE: Not important, safe
+     * - TOXIC_LOGISTICS: Important but harmful (MUST SEE with armor)
+     * - TOXIC_NOISE: Harmful, no info (FILTER OUT)
+     * - null: Not yet analyzed
+     */
     val category: String? = null,
 
+    /**
+     * Severity level: LOW, MEDIUM, HIGH, CRITICAL
+     */
     val severity: String? = null,
 
+    /**
+     * Whether message contains logistics/actionable information
+     */
     @ColumnInfo(name = "has_logistics")
     val hasLogistics: Boolean = false,
 
@@ -60,6 +98,18 @@ data class MessageEntity(
 
     @ColumnInfo(name = "analyzed_at")
     val analyzedAt: Long? = null,
+
+    /**
+     * Retry count for failed analysis attempts
+     */
+    @ColumnInfo(name = "retry_count")
+    val retryCount: Int = 0,
+
+    /**
+     * Last error message if analysis failed
+     */
+    @ColumnInfo(name = "last_error")
+    val lastError: String? = null,
 
     @ColumnInfo(name = "processing_state")
     val processingState: String = "PENDING",
