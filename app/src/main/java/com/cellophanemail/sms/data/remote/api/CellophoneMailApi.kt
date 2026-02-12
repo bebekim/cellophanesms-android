@@ -25,20 +25,20 @@ interface CellophoneMailApi {
         @Body request: SmsAnalysisRequest
     ): Response<SmsAnalysisResponse>
 
-    @GET("api/v1/user/profile")
+    @GET("api/v1/auth/profile")
     suspend fun getUserProfile(): Response<UserProfile>
 
-    @POST("auth/login")
+    @POST("api/v1/auth/login")
     suspend fun login(
         @Body request: AuthRequest
     ): Response<AuthResponse>
 
-    @POST("auth/register")
+    @POST("api/v1/auth/register")
     suspend fun register(
         @Body request: AuthRequest
     ): Response<AuthResponse>
 
-    @POST("auth/refresh")
+    @POST("api/v1/auth/refresh")
     suspend fun refreshToken(
         @Body request: RefreshTokenRequest
     ): Response<AuthResponse>

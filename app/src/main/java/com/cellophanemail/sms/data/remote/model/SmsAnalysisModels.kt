@@ -23,12 +23,17 @@ data class SmsAnalysisResponse(
 )
 
 data class UserProfile(
+    @SerializedName("user_id", alternate = ["id"])
     val id: String,
     val email: String,
+    val username: String? = null,
+    val role: String? = null,
+    @SerializedName("is_verified")
+    val isVerified: Boolean? = null,
     @SerializedName("subscription_status")
-    val subscriptionStatus: String,
+    val subscriptionStatus: String? = null,
     @SerializedName("api_quota")
-    val apiQuota: ApiQuota
+    val apiQuota: ApiQuota? = null
 )
 
 data class ApiQuota(

@@ -2,6 +2,7 @@ package com.cellophanemail.sms.di
 
 import com.cellophanemail.sms.BuildConfig
 import com.cellophanemail.sms.data.remote.AuthInterceptor
+import com.cellophanemail.sms.data.remote.TokenAuthenticator
 import com.cellophanemail.sms.data.remote.api.CellophoneMailApi
 import dagger.Module
 import dagger.Provides
@@ -34,11 +35,13 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
-        authInterceptor: AuthInterceptor
+        authInterceptor: AuthInterceptor,
+        tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .addInterceptor(authInterceptor)
+            .authenticator(tokenAuthenticator)
             // Add ngrok header to bypass interstitial page (for development/testing)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()

@@ -61,9 +61,12 @@ import com.cellophanemail.sms.ui.compose.ComposeActivity
 import com.cellophanemail.sms.ui.contacts.ContactsScreen
 import com.cellophanemail.sms.ui.dashboard.DashboardScreen
 import com.cellophanemail.sms.ui.settings.SettingsActivity
+import com.cellophanemail.sms.ui.auth.LoginActivity
 import com.cellophanemail.sms.ui.theme.CellophaneSMSTheme
 import com.cellophanemail.sms.ui.thread.ThreadActivity
+import com.cellophanemail.sms.data.remote.TokenManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 private data class NavigationItem(
     val title: String,
@@ -73,6 +76,9 @@ private data class NavigationItem(
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var tokenManager: TokenManager
 
     private val requestPermissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -90,6 +96,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Auth gate: redirect to login if no valid token
+        if (!tokenManager.hasValidToken()) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
 
         checkPermissions()
 
