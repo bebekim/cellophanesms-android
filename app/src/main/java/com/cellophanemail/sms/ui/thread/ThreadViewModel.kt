@@ -4,6 +4,7 @@ import android.telephony.SmsManager
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cellophanemail.sms.data.contact.ContactResolver
 import com.cellophanemail.sms.data.repository.MessageRepository
 import com.cellophanemail.sms.domain.model.Message
 import com.cellophanemail.sms.domain.model.ProcessingState
@@ -27,11 +28,15 @@ sealed class ThreadUiState {
 class ThreadViewModel @Inject constructor(
     private val messageRepository: MessageRepository,
     private val notificationHelper: NotificationHelper,
+    private val contactResolver: ContactResolver,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val threadId: String = savedStateHandle.get<String>(ThreadActivity.EXTRA_THREAD_ID) ?: ""
     private val address: String = savedStateHandle.get<String>(ThreadActivity.EXTRA_ADDRESS) ?: ""
+    private val contactName: String by lazy {
+        contactResolver.lookupContact(address)?.displayName ?: address
+    }
 
     private val _uiState = MutableStateFlow<ThreadUiState>(ThreadUiState.Loading)
     val uiState: StateFlow<ThreadUiState> = _uiState.asStateFlow()
@@ -137,6 +142,8 @@ class ThreadViewModel @Inject constructor(
     }
 
     fun getThreadAddress(): String = address
+
+    fun getDisplayName(): String = contactName
 
     fun toggleMessageReveal(messageId: String) {
         _revealedMessageIds.value = if (messageId in _revealedMessageIds.value) {

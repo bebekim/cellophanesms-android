@@ -82,7 +82,7 @@ fun ThreadScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(viewModel.getThreadAddress()) },
+                title = { Text(viewModel.getDisplayName()) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -120,7 +120,8 @@ fun ThreadScreen(
                         showOriginal = message.id in revealedMessageIds,
                         onToggleOriginal = {
                             viewModel.toggleMessageReveal(message.id)
-                        }
+                        },
+                        contactName = viewModel.getDisplayName()
                     )
                 }
             }

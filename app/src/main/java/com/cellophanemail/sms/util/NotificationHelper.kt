@@ -12,6 +12,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.cellophanemail.sms.R
+import com.cellophanemail.sms.data.contact.ContactResolver
 import com.cellophanemail.sms.domain.model.Message
 import com.cellophanemail.sms.domain.model.ToxicityClass
 import com.cellophanemail.sms.ui.thread.ThreadActivity
@@ -21,7 +22,8 @@ import javax.inject.Singleton
 
 @Singleton
 class NotificationHelper @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val contactResolver: ContactResolver
 ) {
     companion object {
         const val CHANNEL_MESSAGES = "messages"
@@ -127,7 +129,8 @@ class NotificationHelper @Inject constructor(
     }
 
     private fun buildNotificationContent(message: Message, isError: Boolean): Pair<String, String> {
-        val senderName = message.address // TODO: Lookup contact name
+        val senderName = contactResolver.lookupContact(message.address)?.displayName
+            ?: message.address
 
         return if (message.isFiltered && message.filteredContent != null && !isError) {
             val title = "$senderName (Filtered)"

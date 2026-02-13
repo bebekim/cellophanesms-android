@@ -41,6 +41,7 @@ fun MessageBubble(
     message: Message,
     showOriginal: Boolean = false,
     onToggleOriginal: () -> Unit,
+    contactName: String? = null,
     modifier: Modifier = Modifier
 ) {
     val isOwn = !message.isIncoming
@@ -78,7 +79,7 @@ fun MessageBubble(
             Column(modifier = Modifier.padding(12.dp)) {
                 // Filtered Header (only show when not viewing original)
                 if (isFiltered && !showOriginal) {
-                    FilteredMessageHeader(message)
+                    FilteredMessageHeader(message, contactName)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
@@ -118,7 +119,8 @@ fun MessageBubble(
 }
 
 @Composable
-private fun FilteredMessageHeader(message: Message) {
+private fun FilteredMessageHeader(message: Message, contactName: String? = null) {
+    val displayName = contactName ?: message.address
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
@@ -141,7 +143,7 @@ private fun FilteredMessageHeader(message: Message) {
                 )
 
                 Text(
-                    text = stringResource(R.string.from_sender, message.address),
+                    text = stringResource(R.string.from_sender, displayName),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

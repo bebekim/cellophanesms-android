@@ -87,4 +87,7 @@ interface MessageDao {
 
     @Update
     suspend fun updateAll(messages: List<MessageEntity>)
+
+    @Query("DELETE FROM messages")
+    suspend fun deleteAll()
 }

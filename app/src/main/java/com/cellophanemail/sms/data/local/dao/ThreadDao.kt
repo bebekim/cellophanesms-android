@@ -60,6 +60,9 @@ interface ThreadDao {
     @Query("DELETE FROM threads WHERE thread_id = :threadId")
     suspend fun delete(threadId: String)
 
+    @Query("DELETE FROM threads")
+    suspend fun deleteAll()
+
     @Query("""
         SELECT * FROM threads
         WHERE contact_name LIKE '%' || :query || '%'
