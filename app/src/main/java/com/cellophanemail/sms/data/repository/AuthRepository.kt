@@ -2,11 +2,14 @@ package com.cellophanemail.sms.data.repository
 
 import com.cellophanemail.sms.data.remote.TokenManager
 import com.cellophanemail.sms.data.remote.api.CellophoneMailApi
-import com.cellophanemail.sms.data.remote.model.AuthRequest
 import com.cellophanemail.sms.data.remote.model.AuthResponse
+import com.cellophanemail.sms.data.remote.model.LoginRequest
 import com.cellophanemail.sms.data.remote.model.RefreshTokenRequest
+import com.cellophanemail.sms.data.remote.model.RegisterRequest
 import javax.inject.Inject
 import javax.inject.Singleton
+
+enum class IdentifierType { EMAIL, PHONE }
 
 @Singleton
 class AuthRepository @Inject constructor(
@@ -14,9 +17,9 @@ class AuthRepository @Inject constructor(
     private val tokenManager: TokenManager
 ) {
 
-    suspend fun login(email: String, password: String): Result<AuthResponse> {
+    suspend fun login(identifier: String, password: String): Result<AuthResponse> {
         return try {
-            val response = api.login(AuthRequest(email, password))
+            val response = api.login(LoginRequest(identifier, password))
             if (response.isSuccessful && response.body() != null) {
                 val auth = response.body()!!
                 tokenManager.saveTokens(
@@ -33,9 +36,17 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun register(email: String, password: String): Result<AuthResponse> {
+    suspend fun register(
+        identifier: String,
+        password: String,
+        identifierType: IdentifierType
+    ): Result<AuthResponse> {
+        val request = when (identifierType) {
+            IdentifierType.EMAIL -> RegisterRequest(email = identifier, password = password)
+            IdentifierType.PHONE -> RegisterRequest(phoneNumber = identifier, password = password)
+        }
         return try {
-            val response = api.register(AuthRequest(email, password))
+            val response = api.register(request)
             if (response.isSuccessful && response.body() != null) {
                 val auth = response.body()!!
                 tokenManager.saveTokens(

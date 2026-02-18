@@ -27,8 +27,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cellophanemail.sms.R
+import com.cellophanemail.sms.domain.model.AnnotationType
+import com.cellophanemail.sms.domain.model.IlluminatedStyle
 import com.cellophanemail.sms.domain.model.Message
+import com.cellophanemail.sms.domain.model.TextAnnotation
 import com.cellophanemail.sms.domain.model.ToxicityClass
+import com.cellophanemail.sms.ui.components.text.DropCapText
+import com.cellophanemail.sms.ui.components.text.EnrichedMessageText
 import com.cellophanemail.sms.ui.theme.BubbleFiltered
 import com.cellophanemail.sms.ui.theme.BubbleIncoming
 import com.cellophanemail.sms.ui.theme.BubbleOutgoing
@@ -42,6 +47,10 @@ fun MessageBubble(
     showOriginal: Boolean = false,
     onToggleOriginal: () -> Unit,
     contactName: String? = null,
+    annotations: List<TextAnnotation> = emptyList(),
+    illuminatedStyle: IlluminatedStyle? = null,
+    entityHighlightsEnabled: Boolean = false,
+    onEntityClick: (AnnotationType, String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val isOwn = !message.isIncoming
@@ -83,12 +92,31 @@ fun MessageBubble(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Content
-                Text(
-                    text = displayText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                // Content — conditional rendering based on settings
+                when {
+                    illuminatedStyle != null && annotations.isNotEmpty() -> {
+                        DropCapText(
+                            text = displayText,
+                            annotations = annotations,
+                            illuminatedStyle = illuminatedStyle,
+                            onEntityClick = onEntityClick
+                        )
+                    }
+                    entityHighlightsEnabled && annotations.isNotEmpty() -> {
+                        EnrichedMessageText(
+                            text = displayText,
+                            annotations = annotations,
+                            onEntityClick = onEntityClick
+                        )
+                    }
+                    else -> {
+                        Text(
+                            text = displayText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
 
                 // Toggle Original Button
                 if (isFiltered) {

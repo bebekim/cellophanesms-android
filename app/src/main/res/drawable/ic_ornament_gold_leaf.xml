@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48"
+    android:tint="?attr/colorControlNormal">
+    <!-- Gold leaf style with beveled frame and leaf accents -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@android:color/black"
+        android:strokeWidth="2.5"
+        android:pathData="M6,2 L42,2 L46,6 L46,42 L42,46 L6,46 L2,42 L2,6 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@android:color/black"
+        android:strokeWidth="0.5"
+        android:pathData="M8,5 L40,5 L43,8 L43,40 L40,43 L8,43 L5,40 L5,8 Z" />
+    <!-- Leaf accents at corners -->
+    <path
+        android:fillColor="@android:color/black"
+        android:pathData="M6,2 Q10,6 6,10 Q4,6 6,2 Z" />
+    <path
+        android:fillColor="@android:color/black"
+        android:pathData="M42,2 Q38,6 42,10 Q44,6 42,2 Z" />
+</vector>

@@ -1,8 +1,10 @@
 package com.cellophanemail.sms.util
 
+import com.cellophanemail.sms.domain.model.AnnotationType
 import com.cellophanemail.sms.domain.model.Horseman
 import com.cellophanemail.sms.domain.model.Message
 import com.cellophanemail.sms.domain.model.ProcessingState
+import com.cellophanemail.sms.domain.model.TextAnnotation
 import com.cellophanemail.sms.domain.model.Thread
 import com.cellophanemail.sms.domain.model.ToxicityClass
 import java.util.UUID
@@ -190,6 +192,42 @@ object TestFixtures {
         const val SHORT_CODE = "12345"
         const val INVALID = "not-a-number"
     }
+
+    // ==================== TextAnnotation Fixtures ====================
+
+    fun createTextAnnotation(
+        id: String = UUID.randomUUID().toString(),
+        type: AnnotationType = AnnotationType.URL,
+        startIndex: Int = 0,
+        endIndex: Int = 10,
+        label: String = type.name,
+        confidence: Float = 1.0f,
+        source: String = "regex_entity",
+        priority: Int = 100,
+        metadata: Map<String, String> = emptyMap()
+    ): TextAnnotation = TextAnnotation(
+        id = id,
+        type = type,
+        startIndex = startIndex,
+        endIndex = endIndex,
+        label = label,
+        confidence = confidence,
+        source = source,
+        priority = priority,
+        metadata = metadata
+    )
+
+    fun createUrlAnnotation(start: Int = 0, end: Int = 20) =
+        createTextAnnotation(type = AnnotationType.URL, startIndex = start, endIndex = end)
+
+    fun createEmailAnnotation(start: Int = 0, end: Int = 16) =
+        createTextAnnotation(type = AnnotationType.EMAIL, startIndex = start, endIndex = end)
+
+    fun createPhoneAnnotation(start: Int = 0, end: Int = 12) =
+        createTextAnnotation(type = AnnotationType.PHONE_NUMBER, startIndex = start, endIndex = end)
+
+    fun createDateAnnotation(start: Int = 0, end: Int = 8) =
+        createTextAnnotation(type = AnnotationType.DATE_TIME, startIndex = start, endIndex = end)
 
     // ==================== Content Samples ====================
 

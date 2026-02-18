@@ -29,8 +29,11 @@ workManager = "2.9.0"
 # Security
 securityCrypto = "1.1.0-alpha06"
 
-# Gemini AI (Cloud LLM)
+# Gemini AI (Cloud LLM + On-device)
 gemini = "0.1.2"
+
+# Flow testing
+turbine = "1.0.0"
 
 # PDF Generation
 itext = "7.2.5"
@@ -96,6 +99,9 @@ security-crypto = { group = "androidx.security", name = "security-crypto", versi
 # Google Gemini AI
 gemini = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "gemini" }
 
+# Flow Testing
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+
 # PDF Export
 itext-core = { group = "com.itextpdf", name = "itext7-core", version.ref = "itext" }
 
@@ -146,5 +152,6 @@ testing = [
     "junit",
     "mockk",
     "coroutines-test",
-    "okhttp-mockwebserver"
+    "okhttp-mockwebserver",
+    "turbine"
 ]

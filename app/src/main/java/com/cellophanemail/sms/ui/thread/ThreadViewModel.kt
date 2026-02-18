@@ -5,15 +5,21 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cellophanemail.sms.data.contact.ContactResolver
+import com.cellophanemail.sms.data.local.TextRenderingPreferences
 import com.cellophanemail.sms.data.repository.MessageRepository
+import com.cellophanemail.sms.domain.annotation.AnnotationPipeline
+import com.cellophanemail.sms.domain.model.AnnotationType
+import com.cellophanemail.sms.domain.model.IlluminatedStyle
 import com.cellophanemail.sms.domain.model.Message
 import com.cellophanemail.sms.domain.model.ProcessingState
-import com.cellophanemail.sms.util.NotificationHelper
+import com.cellophanemail.sms.domain.model.TextAnnotation
+import com.cellophanemail.sms.ui.components.text.EntitySheetState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,8 +33,10 @@ sealed class ThreadUiState {
 @HiltViewModel
 class ThreadViewModel @Inject constructor(
     private val messageRepository: MessageRepository,
-    private val notificationHelper: NotificationHelper,
+    private val notificationHelper: com.cellophanemail.sms.util.NotificationHelper,
     private val contactResolver: ContactResolver,
+    private val annotationPipeline: AnnotationPipeline,
+    private val textRenderingPreferences: TextRenderingPreferences,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -58,15 +66,62 @@ class ThreadViewModel @Inject constructor(
     private val _revealedMessageIds = MutableStateFlow<Set<String>>(emptySet())
     val revealedMessageIds: StateFlow<Set<String>> = _revealedMessageIds.asStateFlow()
 
+    // Annotation state — lazily computed per message
+    private val _annotationsMap = MutableStateFlow<Map<String, List<TextAnnotation>>>(emptyMap())
+    val annotationsMap: StateFlow<Map<String, List<TextAnnotation>>> = _annotationsMap.asStateFlow()
+
+    // Entity bottom sheet state
+    private val _entitySheetState = MutableStateFlow<EntitySheetState?>(null)
+    val entitySheetState: StateFlow<EntitySheetState?> = _entitySheetState.asStateFlow()
+
+    // Text rendering preferences
+    val illuminatedEnabled: StateFlow<Boolean> = textRenderingPreferences.illuminatedEnabled
+    val entityHighlightsEnabled: StateFlow<Boolean> = textRenderingPreferences.entityHighlightsEnabled
+
+    val illuminatedStyle: StateFlow<IlluminatedStyle?> = combine(
+        textRenderingPreferences.illuminatedEnabled,
+        textRenderingPreferences.selectedStylePack
+    ) { enabled, pack ->
+        if (enabled) pack.style else null
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
     init {
         viewModelScope.launch {
             // Mark thread as read when opened
             messageRepository.markThreadAsRead(threadId)
             notificationHelper.cancelNotification(threadId)
 
-            messages.collect {
+            messages.collect { messageList ->
                 _uiState.value = ThreadUiState.Success
+                computeAnnotations(messageList)
             }
+        }
+    }
+
+    private suspend fun computeAnnotations(messageList: List<Message>) {
+        val activeIds = messageList.map { it.id }.toSet()
+
+        // Prune entries for messages no longer in the list
+        val current = _annotationsMap.value
+        if (current.keys.any { it !in activeIds }) {
+            _annotationsMap.value = current.filterKeys { it in activeIds }
+        }
+
+        for (message in messageList) {
+            if (_annotationsMap.value.containsKey(message.id)) continue
+
+            annotationPipeline.annotateProgressive(message.displayContent)
+                .collect { annotations ->
+                    if (annotations.isNotEmpty()) {
+                        _annotationsMap.value = _annotationsMap.value.toMutableMap().apply {
+                            put(message.id, annotations)
+                        }
+                    }
+                }
         }
     }
 
@@ -155,5 +210,13 @@ class ThreadViewModel @Inject constructor(
 
     fun isMessageRevealed(messageId: String): Boolean {
         return messageId in _revealedMessageIds.value
+    }
+
+    fun onEntityClick(type: AnnotationType, text: String) {
+        _entitySheetState.value = EntitySheetState(type, text)
+    }
+
+    fun dismissEntitySheet() {
+        _entitySheetState.value = null
     }
 }

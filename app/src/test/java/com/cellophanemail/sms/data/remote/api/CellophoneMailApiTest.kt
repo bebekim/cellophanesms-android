@@ -394,8 +394,8 @@ class CellophoneMailApiTest {
                 .addHeader("Content-Type", "application/json")
         )
 
-        val request = com.cellophanemail.sms.data.remote.model.AuthRequest(
-            email = "test@example.com",
+        val request = com.cellophanemail.sms.data.remote.model.LoginRequest(
+            identifier = "test@example.com",
             password = "password123"
         )
 
@@ -418,8 +418,8 @@ class CellophoneMailApiTest {
                 .setBody("""{"error": "invalid_credentials", "detail": "Email or password incorrect"}""")
         )
 
-        val request = com.cellophanemail.sms.data.remote.model.AuthRequest(
-            email = "wrong@example.com",
+        val request = com.cellophanemail.sms.data.remote.model.LoginRequest(
+            identifier = "wrong@example.com",
             password = "wrongpassword"
         )
 
@@ -512,7 +512,7 @@ class CellophoneMailApiTest {
                 .setBody(responseJson)
         )
 
-        val request = com.cellophanemail.sms.data.remote.model.AuthRequest(
+        val request = com.cellophanemail.sms.data.remote.model.RegisterRequest(
             email = "newuser@example.com",
             password = "securepassword123"
         )
@@ -534,7 +534,7 @@ class CellophoneMailApiTest {
                 .setBody("""{"error": "email_exists", "detail": "Email already registered"}""")
         )
 
-        val request = com.cellophanemail.sms.data.remote.model.AuthRequest(
+        val request = com.cellophanemail.sms.data.remote.model.RegisterRequest(
             email = "existing@example.com",
             password = "password123"
         )

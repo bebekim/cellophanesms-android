@@ -25,7 +25,13 @@ data class SmsAnalysisResponse(
 data class UserProfile(
     @SerializedName("user_id", alternate = ["id"])
     val id: String,
-    val email: String,
+    val email: String? = null,
+    @SerializedName("phone_number")
+    val phoneNumber: String? = null,
+    @SerializedName("phone_verified")
+    val phoneVerified: Boolean? = null,
+    @SerializedName("verification_method")
+    val verificationMethod: String? = null,
     val username: String? = null,
     val role: String? = null,
     @SerializedName("is_verified")
@@ -43,8 +49,15 @@ data class ApiQuota(
     val resetDate: Long
 )
 
-data class AuthRequest(
-    val email: String,
+data class LoginRequest(
+    val identifier: String,
+    val password: String
+)
+
+data class RegisterRequest(
+    val email: String? = null,
+    @SerializedName("phone_number")
+    val phoneNumber: String? = null,
     val password: String
 )
 

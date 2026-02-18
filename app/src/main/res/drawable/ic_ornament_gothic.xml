@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48"
+    android:tint="?attr/colorControlNormal">
+    <!-- Gothic ink style with pointed arch frame -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@android:color/black"
+        android:strokeWidth="2"
+        android:pathData="M24,2 L4,14 L4,44 L44,44 L44,14 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@android:color/black"
+        android:strokeWidth="1"
+        android:pathData="M24,5 L7,15 L7,41 L41,41 L41,15 Z" />
+    <!-- Trefoil at apex -->
+    <path
+        android:fillColor="@android:color/black"
+        android:pathData="M24,2 Q22,6 20,4 Q22,7 24,5 Q26,7 28,4 Q26,6 24,2 Z" />
+</vector>

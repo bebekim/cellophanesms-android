@@ -1,7 +1,8 @@
 package com.cellophanemail.sms.data.remote.api
 
-import com.cellophanemail.sms.data.remote.model.AuthRequest
 import com.cellophanemail.sms.data.remote.model.AuthResponse
+import com.cellophanemail.sms.data.remote.model.LoginRequest
+import com.cellophanemail.sms.data.remote.model.RegisterRequest
 import com.cellophanemail.sms.data.remote.model.BatchAnalysisRequest
 import com.cellophanemail.sms.data.remote.model.BatchAnalysisResponse
 import com.cellophanemail.sms.data.remote.model.BatchJobResponse
@@ -30,12 +31,12 @@ interface CellophoneMailApi {
 
     @POST("api/v1/auth/login")
     suspend fun login(
-        @Body request: AuthRequest
+        @Body request: LoginRequest
     ): Response<AuthResponse>
 
     @POST("api/v1/auth/register")
     suspend fun register(
-        @Body request: AuthRequest
+        @Body request: RegisterRequest
     ): Response<AuthResponse>
 
     @POST("api/v1/auth/refresh")

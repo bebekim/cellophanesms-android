@@ -8,7 +8,9 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,8 +18,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,6 +30,8 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
@@ -37,6 +43,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,7 +51,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,13 +62,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cellophanemail.sms.BuildConfig
 import com.cellophanemail.sms.R
+import com.cellophanemail.sms.data.local.NerProviderMode
+import com.cellophanemail.sms.data.local.TextRenderingPreferences
 import com.cellophanemail.sms.debug.TestDataSeeder
+import com.cellophanemail.sms.domain.model.IlluminatedStylePack
 import com.cellophanemail.sms.ui.auth.LoginActivity
+import com.cellophanemail.sms.ui.components.text.IlluminatedInitial
 import com.cellophanemail.sms.ui.theme.CellophaneSMSTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -115,6 +126,8 @@ fun SettingsScreen(
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
+    var showTextStyleDialog by remember { mutableStateOf(false) }
+    var showNerSettingsDialog by remember { mutableStateOf(false) }
 
     val profileState by viewModel.profileState.collectAsState()
 
@@ -190,6 +203,24 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_privacy),
                 subtitle = "Data storage and encryption settings",
                 onClick = { showPrivacyDialog = true }
+            )
+
+            HorizontalDivider()
+
+            SettingsItem(
+                icon = Icons.Default.FormatSize,
+                title = stringResource(R.string.settings_text_style),
+                subtitle = stringResource(R.string.settings_text_style_subtitle),
+                onClick = { showTextStyleDialog = true }
+            )
+
+            HorizontalDivider()
+
+            SettingsItem(
+                icon = Icons.Default.Face,
+                title = "AI Entity Recognition",
+                subtitle = "Detect people, places, and organizations",
+                onClick = { showNerSettingsDialog = true }
             )
 
             HorizontalDivider()
@@ -314,6 +345,22 @@ fun SettingsScreen(
     // About Dialog
     if (showAboutDialog) {
         AboutDialog(onDismiss = { showAboutDialog = false })
+    }
+
+    // Text Style Dialog
+    if (showTextStyleDialog) {
+        TextStyleDialog(
+            viewModel = viewModel,
+            onDismiss = { showTextStyleDialog = false }
+        )
+    }
+
+    // NER Settings Dialog
+    if (showNerSettingsDialog) {
+        NerSettingsDialog(
+            viewModel = viewModel,
+            onDismiss = { showNerSettingsDialog = false }
+        )
     }
 
     // Logout Confirmation
@@ -536,6 +583,150 @@ private fun AboutDialog(onDismiss: () -> Unit) {
         }
     )
 }
+
+@Composable
+private fun TextStyleDialog(
+    viewModel: SettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    val illuminatedEnabled by viewModel.illuminatedEnabled.collectAsState()
+    val selectedPack by viewModel.selectedStylePack.collectAsState()
+    val entityHighlightsEnabled by viewModel.entityHighlightsEnabled.collectAsState()
+    val isDark = isSystemInDarkTheme()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_text_style)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Illuminated Initials toggle
+                FilterToggle(
+                    label = stringResource(R.string.settings_illuminated_initials),
+                    checked = illuminatedEnabled,
+                    onCheckedChange = { viewModel.setIlluminatedEnabled(it) }
+                )
+                Text(
+                    text = stringResource(R.string.settings_illuminated_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+
+                // Style pack selector (only visible when illuminated is enabled)
+                if (illuminatedEnabled) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.settings_style_pack),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    IlluminatedStylePack.entries.forEach { pack ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = pack == selectedPack,
+                                    onClick = { viewModel.setSelectedStylePack(pack) },
+                                    role = Role.RadioButton
+                                )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = pack == selectedPack,
+                                onClick = null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = pack.style.displayName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            // Preview letter
+                            Box(modifier = Modifier.size(36.dp)) {
+                                IlluminatedInitial(
+                                    letter = 'A',
+                                    style = pack.style,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Entity Highlights toggle
+                FilterToggle(
+                    label = stringResource(R.string.settings_entity_highlights),
+                    checked = entityHighlightsEnabled,
+                    onCheckedChange = { viewModel.setEntityHighlightsEnabled(it) }
+                )
+                Text(
+                    text = stringResource(R.string.settings_entity_highlights_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done")
+            }
+        }
+    )
+}
+
+@Composable
+private fun NerSettingsDialog(
+    viewModel: SettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    val selectedMode by viewModel.nerProviderMode.collectAsState()
+    val modelDownloaded by viewModel.nerModelDownloaded.collectAsState()
+    val wifiOnly by viewModel.nerWifiOnlyDownload.collectAsState()
+    val downloadProgress by viewModel.nerDownloadProgress.collectAsState()
+    val isDownloading by viewModel.nerIsDownloading.collectAsState()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("AI Entity Recognition") },
+        text = {
+            NerProviderSection(
+                selectedMode = selectedMode,
+                onModeSelected = { viewModel.setNerProviderMode(it) },
+                modelDownloaded = modelDownloaded,
+                downloadProgress = downloadProgress,
+                isDownloading = isDownloading,
+                wifiOnlyDownload = wifiOnly,
+                onWifiOnlyChanged = { viewModel.setNerWifiOnlyDownload(it) },
+                onStartDownload = {
+                    viewModel.startNerModelDownload(MODEL_DOWNLOAD_URL)
+                },
+                onDeleteModel = { viewModel.deleteNerModel() },
+                activeProvider = when (selectedMode) {
+                    NerProviderMode.AUTO -> "Auto-detect"
+                    NerProviderMode.GEMINI_NANO -> "Gemini Nano"
+                    NerProviderMode.QWEN3_LOCAL -> if (modelDownloaded) "Qwen3 Local" else "Not available"
+                    NerProviderMode.CLAUDE_CLOUD -> "Cloud"
+                    NerProviderMode.OFF -> null
+                }
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done")
+            }
+        }
+    )
+}
+
+// Model download URL — update when hosting is finalized
+private const val MODEL_DOWNLOAD_URL = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/qwen3-0.6b-q4_k_m.gguf"
 
 @Composable
 fun SettingsItem(

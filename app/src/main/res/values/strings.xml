@@ -115,6 +115,24 @@
     <string name="settings_privacy">Privacy</string>
     <string name="settings_about">About</string>
 
+    <!-- Text Style Settings -->
+    <string name="settings_text_style">Text Style</string>
+    <string name="settings_text_style_subtitle">Illuminated initials and entity highlights</string>
+    <string name="settings_illuminated_initials">Illuminated Initials</string>
+    <string name="settings_illuminated_desc">Show decorative drop caps at the start of messages</string>
+    <string name="settings_style_pack">Style Pack</string>
+    <string name="settings_entity_highlights">Entity Highlights</string>
+    <string name="settings_entity_highlights_desc">Highlight dates, links, emails, and phone numbers in messages</string>
+    <string name="settings_preview_letter">A</string>
+
+    <!-- Entity Actions -->
+    <string name="entity_action_calendar">Add to Calendar</string>
+    <string name="entity_action_copy">Copy</string>
+    <string name="entity_action_open_browser">Open in Browser</string>
+    <string name="entity_action_send_email">Send Email</string>
+    <string name="entity_action_call">Call</string>
+    <string name="entity_action_send_sms">Send SMS</string>
+
     <!-- Errors -->
     <string name="error_send_failed">Failed to send message</string>
     <string name="error_network">Network error. Please try again.</string>

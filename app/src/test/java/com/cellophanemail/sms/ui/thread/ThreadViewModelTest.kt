@@ -1,7 +1,11 @@
 package com.cellophanemail.sms.ui.thread
 
 import androidx.lifecycle.SavedStateHandle
+import com.cellophanemail.sms.data.local.TextRenderingPreferences
 import com.cellophanemail.sms.data.repository.MessageRepository
+import com.cellophanemail.sms.domain.annotation.AnnotationPipeline
+import com.cellophanemail.sms.domain.annotation.RegexEntitySource
+import com.cellophanemail.sms.domain.model.AnnotationType
 import com.cellophanemail.sms.domain.model.Horseman
 import com.cellophanemail.sms.domain.model.Message
 import com.cellophanemail.sms.domain.model.ProcessingState
@@ -25,6 +29,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -35,6 +40,9 @@ class ThreadViewModelTest {
 
     private lateinit var messageRepository: MessageRepository
     private lateinit var notificationHelper: NotificationHelper
+    private lateinit var contactResolver: com.cellophanemail.sms.data.contact.ContactResolver
+    private lateinit var annotationPipeline: AnnotationPipeline
+    private lateinit var textRenderingPreferences: TextRenderingPreferences
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var viewModel: ThreadViewModel
     private val testDispatcher = StandardTestDispatcher()
@@ -96,11 +104,55 @@ class ThreadViewModelTest {
         isArchived = false
     )
 
+    private val testMessageWithEntities = Message(
+        id = "msg4",
+        threadId = "thread1",
+        address = "+1234567890",
+        timestamp = System.currentTimeMillis() - 3000,
+        isIncoming = true,
+        originalContent = "Visit https://example.com or call 555-123-4567 tomorrow",
+        filteredContent = null,
+        isFiltered = false,
+        toxicityScore = null,
+        classification = null,
+        horsemen = emptyList(),
+        reasoning = null,
+        processingState = ProcessingState.SAFE,
+        isSent = true,
+        isRead = false,
+        isArchived = false
+    )
+
+    private fun createViewModel(
+        messages: List<Message> = listOf(testMessage1, testMessage2, testMessage3),
+        handle: SavedStateHandle = savedStateHandle
+    ): ThreadViewModel {
+        coEvery { messageRepository.getMessagesByThread("thread1") } returns flowOf(messages)
+        return ThreadViewModel(
+            messageRepository,
+            notificationHelper,
+            contactResolver,
+            annotationPipeline,
+            textRenderingPreferences,
+            handle
+        )
+    }
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         messageRepository = mockk(relaxed = true)
         notificationHelper = mockk(relaxed = true)
+        contactResolver = mockk(relaxed = true)
+        annotationPipeline = AnnotationPipeline(listOf(RegexEntitySource()))
+        textRenderingPreferences = mockk(relaxed = true)
+
+        every { textRenderingPreferences.illuminatedEnabled } returns kotlinx.coroutines.flow.MutableStateFlow(false)
+        every { textRenderingPreferences.entityHighlightsEnabled } returns kotlinx.coroutines.flow.MutableStateFlow(true)
+        every { textRenderingPreferences.selectedStylePack } returns kotlinx.coroutines.flow.MutableStateFlow(
+            com.cellophanemail.sms.domain.model.IlluminatedStylePack.CLASSIC_ILLUMINATED
+        )
+
         savedStateHandle = SavedStateHandle(
             mapOf(
                 ThreadActivity.EXTRA_THREAD_ID to "thread1",
@@ -114,7 +166,7 @@ class ThreadViewModelTest {
         coEvery { messageRepository.markThreadAsRead(any()) } just Runs
         every { notificationHelper.cancelNotification(any()) } just Runs
 
-        viewModel = ThreadViewModel(messageRepository, notificationHelper, savedStateHandle)
+        viewModel = createViewModel()
     }
 
     @After
@@ -282,7 +334,7 @@ class ThreadViewModelTest {
                 ThreadActivity.EXTRA_ADDRESS to ""
             )
         )
-        val vm = ThreadViewModel(messageRepository, notificationHelper, emptyAddressHandle)
+        val vm = createViewModel(handle = emptyAddressHandle)
 
         vm.updateComposingText("Test")
         vm.sendMessage()
@@ -296,9 +348,79 @@ class ThreadViewModelTest {
     @Test
     fun `handles missing thread id gracefully`() = runTest {
         val emptyHandle = SavedStateHandle()
-        val vm = ThreadViewModel(messageRepository, notificationHelper, emptyHandle)
+        coEvery { messageRepository.getMessagesByThread("") } returns flowOf(emptyList())
+        val vm = ThreadViewModel(
+            messageRepository, notificationHelper, contactResolver,
+            annotationPipeline, textRenderingPreferences, emptyHandle
+        )
 
         // Should default to empty string and not crash
         assertEquals("", vm.getThreadAddress())
+    }
+
+    // ==================== Annotation Tests ====================
+
+    @Test
+    fun `annotations computed for messages with entities`() = runTest {
+        val vm = createViewModel(
+            messages = listOf(testMessageWithEntities)
+        )
+        advanceUntilIdle()
+
+        val annotations = vm.annotationsMap.value[testMessageWithEntities.id]
+        assertNotNull(annotations)
+        assertTrue(annotations!!.isNotEmpty())
+    }
+
+    @Test
+    fun `annotations empty for plain text messages`() = runTest {
+        val vm = createViewModel(
+            messages = listOf(testMessage1) // "Hello there!" — no entities
+        )
+        advanceUntilIdle()
+
+        val annotations = vm.annotationsMap.value[testMessage1.id]
+        // No annotations means not in the map at all
+        assertNull(annotations)
+    }
+
+    @Test
+    fun `initial annotations map is empty`() {
+        assertTrue(viewModel.annotationsMap.value.isEmpty())
+    }
+
+    // ==================== Entity Sheet State Tests ====================
+
+    @Test
+    fun `initial entity sheet state is null`() {
+        assertNull(viewModel.entitySheetState.value)
+    }
+
+    @Test
+    fun `onEntityClick sets entity sheet state`() {
+        viewModel.onEntityClick(AnnotationType.URL, "https://example.com")
+        val state = viewModel.entitySheetState.value
+        assertNotNull(state)
+        assertEquals(AnnotationType.URL, state!!.type)
+        assertEquals("https://example.com", state.text)
+    }
+
+    @Test
+    fun `dismissEntitySheet clears entity sheet state`() {
+        viewModel.onEntityClick(AnnotationType.EMAIL, "test@example.com")
+        viewModel.dismissEntitySheet()
+        assertNull(viewModel.entitySheetState.value)
+    }
+
+    // ==================== Preference Propagation Tests ====================
+
+    @Test
+    fun `entity highlights enabled reflects preferences`() {
+        assertTrue(viewModel.entityHighlightsEnabled.value)
+    }
+
+    @Test
+    fun `illuminated style is null when disabled`() {
+        assertNull(viewModel.illuminatedStyle.value)
     }
 }

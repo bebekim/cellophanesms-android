@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -32,12 +34,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cellophanemail.sms.data.repository.IdentifierType
 import com.cellophanemail.sms.ui.main.MainActivity
 import com.cellophanemail.sms.ui.theme.CellophaneSMSTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -67,8 +71,9 @@ fun LoginScreen(
     onAuthSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val email by viewModel.email.collectAsState()
+    val identifier by viewModel.identifier.collectAsState()
     val password by viewModel.password.collectAsState()
+    val identifierType by viewModel.identifierType.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val focusManager = LocalFocusManager.current
     var isRegisterMode by remember { mutableStateOf(false) }
@@ -109,15 +114,68 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Email / Phone toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                TextButton(
+                    onClick = { viewModel.setIdentifierType(IdentifierType.EMAIL) },
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = if (identifierType == IdentifierType.EMAIL)
+                            MaterialTheme.colorScheme.primary
+                        else Color.Transparent,
+                        contentColor = if (identifierType == IdentifierType.EMAIL)
+                            MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    modifier = Modifier.weight(1f),
+                    enabled = uiState !is AuthUiState.Loading
+                ) {
+                    Text("Email")
+                }
+
+                TextButton(
+                    onClick = { viewModel.setIdentifierType(IdentifierType.PHONE) },
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = if (identifierType == IdentifierType.PHONE)
+                            MaterialTheme.colorScheme.primary
+                        else Color.Transparent,
+                        contentColor = if (identifierType == IdentifierType.PHONE)
+                            MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    modifier = Modifier.weight(1f),
+                    enabled = uiState !is AuthUiState.Loading
+                ) {
+                    Text("Phone")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = email,
-                onValueChange = viewModel::setEmail,
-                label = { Text("Email") },
+                value = identifier,
+                onValueChange = viewModel::setIdentifier,
+                label = {
+                    Text(
+                        if (identifierType == IdentifierType.EMAIL) "Email"
+                        else "Phone Number"
+                    )
+                },
+                placeholder = {
+                    Text(
+                        if (identifierType == IdentifierType.EMAIL) "you@example.com"
+                        else "+61412345678"
+                    )
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
+                    keyboardType = if (identifierType == IdentifierType.EMAIL)
+                        KeyboardType.Email
+                    else KeyboardType.Phone,
                     imeAction = ImeAction.Next
                 ),
                 keyboardActions = KeyboardActions(

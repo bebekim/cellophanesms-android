@@ -38,6 +38,28 @@ val BubbleFiltered = Color(0xFFFFF3E0)
 val FilteredHeaderBg = Color(0xFFFFF8E1)
 val FilteredHeaderBorder = Color(0xFFFFE082)
 
+// Entity Highlight Colors — Light Theme
+val EntityDateTime = Color(0xFF7B1FA2)      // Purple 700
+val EntityUrl = Color(0xFF1565C0)           // Blue 800
+val EntityEmail = Color(0xFF00695C)         // Teal 800
+val EntityPhone = Color(0xFF2E7D32)         // Green 800
+
+// Entity Highlight Colors — Dark Theme
+val EntityDateTimeDark = Color(0xFFCE93D8)  // Purple 200
+val EntityUrlDark = Color(0xFF90CAF9)       // Blue 200
+val EntityEmailDark = Color(0xFF80CBC4)     // Teal 200
+val EntityPhoneDark = Color(0xFFA5D6A7)     // Green 200
+
+// NER Entity Highlight Colors — Light Theme
+val EntityPersonName = Color(0xFF7E57C2)    // Deep Purple 400
+val EntityLocation = Color(0xFF26A69A)      // Teal 400
+val EntityOrganization = Color(0xFFEF6C00)  // Orange 800
+
+// NER Entity Highlight Colors — Dark Theme
+val EntityPersonNameDark = Color(0xFFB39DDB) // Deep Purple 200
+val EntityLocationDark = Color(0xFF4DB6AC)   // Teal 300
+val EntityOrganizationDark = Color(0xFFFFB74D) // Orange 300
+
 // Dark Theme Colors
 val PrimaryDark = Color(0xFF90CAF9)
 val PrimaryVariantDark = Color(0xFF42A5F5)
