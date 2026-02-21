@@ -3,6 +3,7 @@ package com.cellophanemail.sms.di
 import com.cellophanemail.sms.data.local.NerModelManager
 import com.cellophanemail.sms.data.local.NerProviderPreferences
 import com.cellophanemail.sms.data.remote.NerExtractionApi
+import com.cellophanemail.sms.data.remote.RenderApi
 import com.cellophanemail.sms.domain.annotation.AnnotationPipeline
 import com.cellophanemail.sms.domain.annotation.AnnotationSource
 import com.cellophanemail.sms.domain.annotation.RegexEntitySource
@@ -27,6 +28,12 @@ object AnnotationModule {
     @Singleton
     fun provideNerExtractionApi(retrofit: Retrofit): NerExtractionApi {
         return retrofit.create(NerExtractionApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRenderApi(retrofit: Retrofit): RenderApi {
+        return retrofit.create(RenderApi::class.java)
     }
 
     @Provides
