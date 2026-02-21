@@ -74,6 +74,8 @@ fun ThreadScreen(
     val illuminatedStyle by viewModel.illuminatedStyle.collectAsState()
     val entityHighlightsEnabled by viewModel.entityHighlightsEnabled.collectAsState()
     val entitySheetState by viewModel.entitySheetState.collectAsState()
+    val toneMap by viewModel.toneMap.collectAsState()
+    val serverComposedMap by viewModel.serverComposedMap.collectAsState()
 
     val listState = rememberLazyListState()
 
@@ -132,7 +134,9 @@ fun ThreadScreen(
                         entityHighlightsEnabled = entityHighlightsEnabled,
                         onEntityClick = { type, text ->
                             viewModel.onEntityClick(type, text)
-                        }
+                        },
+                        tone = toneMap[message.id],
+                        serverComposedDocument = serverComposedMap[message.id]
                     )
                 }
             }

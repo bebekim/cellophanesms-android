@@ -6,8 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cellophanemail.sms.data.contact.ContactResolver
 import com.cellophanemail.sms.data.local.TextRenderingPreferences
+import com.cellophanemail.sms.data.remote.DocumentDto
+import com.cellophanemail.sms.data.remote.NerExtractionRequest
+import com.cellophanemail.sms.data.remote.RenderApi
 import com.cellophanemail.sms.data.repository.MessageRepository
 import com.cellophanemail.sms.domain.annotation.AnnotationPipeline
+import com.cellophanemail.sms.domain.annotation.ner.TieredNerAnnotationSource
 import com.cellophanemail.sms.domain.model.AnnotationType
 import com.cellophanemail.sms.domain.model.IlluminatedStyle
 import com.cellophanemail.sms.domain.model.Message
@@ -36,7 +40,9 @@ class ThreadViewModel @Inject constructor(
     private val notificationHelper: com.cellophanemail.sms.util.NotificationHelper,
     private val contactResolver: ContactResolver,
     private val annotationPipeline: AnnotationPipeline,
+    private val tieredNerSource: TieredNerAnnotationSource,
     private val textRenderingPreferences: TextRenderingPreferences,
+    private val renderApi: RenderApi,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -73,6 +79,14 @@ class ThreadViewModel @Inject constructor(
     // Entity bottom sheet state
     private val _entitySheetState = MutableStateFlow<EntitySheetState?>(null)
     val entitySheetState: StateFlow<EntitySheetState?> = _entitySheetState.asStateFlow()
+
+    // Tone per message — populated after annotations complete
+    private val _toneMap = MutableStateFlow<Map<String, String?>>(emptyMap())
+    val toneMap: StateFlow<Map<String, String?>> = _toneMap.asStateFlow()
+
+    // Server-composed Document AST per message (alternative to client-side pipeline)
+    private val _serverComposedMap = MutableStateFlow<Map<String, DocumentDto>>(emptyMap())
+    val serverComposedMap: StateFlow<Map<String, DocumentDto>> = _serverComposedMap.asStateFlow()
 
     // Text rendering preferences
     val illuminatedEnabled: StateFlow<Boolean> = textRenderingPreferences.illuminatedEnabled
@@ -120,8 +134,31 @@ class ThreadViewModel @Inject constructor(
                         _annotationsMap.value = _annotationsMap.value.toMutableMap().apply {
                             put(message.id, annotations)
                         }
+                        // Query tone after NER annotations are available
+                        val tone = tieredNerSource.getDetectedTone(message.displayContent)
+                        if (tone != null) {
+                            _toneMap.value = _toneMap.value.toMutableMap().apply {
+                                put(message.id, tone)
+                            }
+                        }
                     }
                 }
+        }
+    }
+
+    fun fetchServerComposed(messageId: String, content: String) {
+        if (_serverComposedMap.value.containsKey(messageId)) return
+        viewModelScope.launch {
+            runCatching {
+                val response = renderApi.render(NerExtractionRequest(content = content))
+                if (response.isSuccessful) {
+                    response.body()?.document?.let { doc ->
+                        _serverComposedMap.value = _serverComposedMap.value.toMutableMap().apply {
+                            put(messageId, doc)
+                        }
+                    }
+                }
+            }
         }
     }
 

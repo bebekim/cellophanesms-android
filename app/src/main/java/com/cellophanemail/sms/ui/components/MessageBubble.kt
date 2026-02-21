@@ -34,6 +34,9 @@ import com.cellophanemail.sms.domain.model.TextAnnotation
 import com.cellophanemail.sms.domain.model.ToxicityClass
 import com.cellophanemail.sms.ui.components.text.DropCapText
 import com.cellophanemail.sms.ui.components.text.EnrichedMessageText
+import com.cellophanemail.sms.data.remote.DocumentDto
+import com.cellophanemail.sms.ui.components.text.ServerComposedText
+import com.cellophanemail.sms.ui.components.text.ToneBadge
 import com.cellophanemail.sms.ui.theme.BubbleFiltered
 import com.cellophanemail.sms.ui.theme.BubbleIncoming
 import com.cellophanemail.sms.ui.theme.BubbleOutgoing
@@ -51,6 +54,8 @@ fun MessageBubble(
     illuminatedStyle: IlluminatedStyle? = null,
     entityHighlightsEnabled: Boolean = false,
     onEntityClick: (AnnotationType, String) -> Unit = { _, _ -> },
+    tone: String? = null,
+    serverComposedDocument: DocumentDto? = null,
     modifier: Modifier = Modifier
 ) {
     val isOwn = !message.isIncoming
@@ -94,6 +99,12 @@ fun MessageBubble(
 
                 // Content — conditional rendering based on settings
                 when {
+                    serverComposedDocument != null -> {
+                        ServerComposedText(
+                            document = serverComposedDocument,
+                            onEntityClick = onEntityClick
+                        )
+                    }
                     illuminatedStyle != null && annotations.isNotEmpty() -> {
                         DropCapText(
                             text = displayText,
@@ -132,6 +143,11 @@ fun MessageBubble(
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
+                }
+
+                // Tone Badge
+                if (tone != null) {
+                    ToneBadge(tone = tone)
                 }
 
                 // Timestamp
