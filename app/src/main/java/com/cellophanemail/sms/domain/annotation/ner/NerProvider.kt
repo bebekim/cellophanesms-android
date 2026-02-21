@@ -26,5 +26,5 @@ interface NerProvider {
     val providerId: String
     val requiresNetwork: Boolean
     suspend fun isAvailable(): Boolean
-    suspend fun extractEntities(text: String): List<NerEntity>
+    suspend fun extractEntities(text: String): NerExtractionResult
 }

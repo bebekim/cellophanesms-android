@@ -5,6 +5,7 @@ import com.cellophanemail.sms.data.local.NerProviderMode
 import com.cellophanemail.sms.data.local.NerProviderPreferences
 import com.cellophanemail.sms.domain.annotation.AnnotationSource
 import com.cellophanemail.sms.domain.model.TextAnnotation
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,6 +18,8 @@ class TieredNerAnnotationSource @Inject constructor(
     override val sourceId: String = SOURCE_ID
     override val defaultPriority: Int = 200
     override val requiresNetwork: Boolean = false
+
+    private val toneCache = ConcurrentHashMap<String, String?>()
 
     override suspend fun annotate(text: String): List<TextAnnotation> {
         if (text.isBlank()) return emptyList()
@@ -33,8 +36,9 @@ class TieredNerAnnotationSource @Inject constructor(
 
         for (provider in providersToTry) {
             runCatching { provider.extractEntities(text) }
-                .onSuccess { entities ->
-                    return entities.map { it.toTextAnnotation(provider.providerId, defaultPriority) }
+                .onSuccess { result ->
+                    toneCache[text] = result.tone
+                    return result.entities.map { it.toTextAnnotation(provider.providerId, defaultPriority) }
                 }
                 .onFailure { e ->
                     Log.w(TAG, "${provider.providerId} failed: ${e.message}")
@@ -43,6 +47,8 @@ class TieredNerAnnotationSource @Inject constructor(
 
         return emptyList()
     }
+
+    fun getDetectedTone(text: String): String? = toneCache[text]
 
     companion object {
         const val SOURCE_ID = "tiered_ner"

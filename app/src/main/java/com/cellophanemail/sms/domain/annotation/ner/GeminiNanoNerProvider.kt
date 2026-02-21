@@ -49,14 +49,18 @@ class GeminiNanoNerProvider @Inject constructor(
         }
     }
 
-    override suspend fun extractEntities(text: String): List<NerEntity> {
+    override suspend fun extractEntities(text: String): NerExtractionResult {
         val activeModel = model ?: throw IllegalStateException("Gemini Nano not available")
         val prompt = NerPromptTemplate.buildPrompt(text)
 
         val response = activeModel.generateContent(prompt)
-        val responseText = response.text ?: return emptyList()
+        val responseText = response.text
+            ?: return NerExtractionResult(entities = emptyList(), tone = null)
 
-        return NerPromptTemplate.parseResponse(responseText, text)
+        return NerExtractionResult(
+            entities = NerPromptTemplate.parseResponse(responseText, text),
+            tone = null
+        )
     }
 
     companion object {

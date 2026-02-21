@@ -28,14 +28,17 @@ class Qwen3LocalNerProvider @Inject constructor(
 
     override suspend fun isAvailable(): Boolean = modelManager.modelExists()
 
-    override suspend fun extractEntities(text: String): List<NerEntity> {
+    override suspend fun extractEntities(text: String): NerExtractionResult {
         val responseText = synchronized(lock) {
             ensureModelLoaded()
             val prompt = NerPromptTemplate.buildPromptWithNoThink(text)
             runInference(prompt)
         }
 
-        return NerPromptTemplate.parseResponse(responseText, text)
+        return NerExtractionResult(
+            entities = NerPromptTemplate.parseResponse(responseText, text),
+            tone = null
+        )
     }
 
     // Must be called while holding [lock]

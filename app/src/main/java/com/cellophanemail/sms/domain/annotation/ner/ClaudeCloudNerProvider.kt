@@ -18,15 +18,19 @@ class ClaudeCloudNerProvider @Inject constructor(
 
     override suspend fun isAvailable(): Boolean = networkMonitor.isConnected.value
 
-    override suspend fun extractEntities(text: String): List<NerEntity> {
-        val response = api.extractEntities(NerExtractionRequest(text))
+    override suspend fun extractEntities(text: String): NerExtractionResult {
+        val response = api.extractEntities(NerExtractionRequest(content = text))
 
         if (!response.isSuccessful) {
             throw RuntimeException("NER API returned ${response.code()}: ${response.message()}")
         }
 
-        val body = response.body() ?: return emptyList()
-        return body.entities.mapNotNull { it.toNerEntity(text) }
+        val body = response.body()
+            ?: return NerExtractionResult(entities = emptyList(), tone = null)
+        return NerExtractionResult(
+            entities = body.entities.mapNotNull { it.toNerEntity(text) },
+            tone = body.tone
+        )
     }
 
     private fun NerEntityDto.toNerEntity(originalText: String): NerEntity? {

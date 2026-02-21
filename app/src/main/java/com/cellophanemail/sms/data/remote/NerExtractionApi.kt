@@ -6,11 +6,16 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 data class NerExtractionRequest(
-    @SerializedName("text") val text: String
+    @SerializedName("content") val content: String,
+    @SerializedName("channel") val channel: String = "sms"
 )
 
 data class NerExtractionResponse(
-    @SerializedName("entities") val entities: List<NerEntityDto>
+    @SerializedName("entities") val entities: List<NerEntityDto>,
+    @SerializedName("tone") val tone: String? = null,
+    @SerializedName("processing_time_ms") val processingTimeMs: Int = 0,
+    @SerializedName("extractor_used") val extractorUsed: String = "",
+    @SerializedName("channel") val channel: String = ""
 )
 
 data class NerEntityDto(
@@ -22,7 +27,7 @@ data class NerEntityDto(
 )
 
 interface NerExtractionApi {
-    @POST("api/v1/ner/extract")
+    @POST("api/v1/messages/extract-entities")
     suspend fun extractEntities(
         @Body request: NerExtractionRequest
     ): Response<NerExtractionResponse>

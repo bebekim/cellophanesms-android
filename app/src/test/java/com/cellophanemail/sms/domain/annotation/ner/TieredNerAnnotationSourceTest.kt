@@ -9,6 +9,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -51,8 +52,9 @@ class TieredNerAnnotationSourceTest {
     @Test
     fun `uses first available provider in auto mode`() = runTest {
         coEvery { providerA.isAvailable() } returns true
-        coEvery { providerA.extractEntities(any()) } returns listOf(
-            NerEntity("John", AnnotationType.PERSON_NAME, 0, 4, 0.9f)
+        coEvery { providerA.extractEntities(any()) } returns NerExtractionResult(
+            entities = listOf(NerEntity("John", AnnotationType.PERSON_NAME, 0, 4, 0.9f)),
+            tone = "warm"
         )
 
         val result = source.annotate("John went home")
@@ -67,8 +69,8 @@ class TieredNerAnnotationSourceTest {
         coEvery { providerA.extractEntities(any()) } throws RuntimeException("AICore not available")
 
         coEvery { providerB.isAvailable() } returns true
-        coEvery { providerB.extractEntities(any()) } returns listOf(
-            NerEntity("Google", AnnotationType.ORGANIZATION, 0, 6, 0.85f)
+        coEvery { providerB.extractEntities(any()) } returns NerExtractionResult(
+            entities = listOf(NerEntity("Google", AnnotationType.ORGANIZATION, 0, 6, 0.85f))
         )
 
         val result = source.annotate("Google is great")
@@ -82,8 +84,8 @@ class TieredNerAnnotationSourceTest {
         coEvery { providerA.isAvailable() } returns false
         coEvery { providerB.isAvailable() } returns false
         coEvery { providerC.isAvailable() } returns true
-        coEvery { providerC.extractEntities(any()) } returns listOf(
-            NerEntity("Paris", AnnotationType.LOCATION, 0, 5, 0.9f)
+        coEvery { providerC.extractEntities(any()) } returns NerExtractionResult(
+            entities = listOf(NerEntity("Paris", AnnotationType.LOCATION, 0, 5, 0.9f))
         )
 
         val result = source.annotate("Paris is lovely")
@@ -122,8 +124,8 @@ class TieredNerAnnotationSourceTest {
         modeFlow.value = NerProviderMode.CLAUDE_CLOUD
 
         coEvery { providerC.isAvailable() } returns true
-        coEvery { providerC.extractEntities(any()) } returns listOf(
-            NerEntity("John", AnnotationType.PERSON_NAME, 0, 4, 0.9f)
+        coEvery { providerC.extractEntities(any()) } returns NerExtractionResult(
+            entities = listOf(NerEntity("John", AnnotationType.PERSON_NAME, 0, 4, 0.9f))
         )
 
         val result = source.annotate("John went home")
@@ -161,13 +163,46 @@ class TieredNerAnnotationSourceTest {
     @Test
     fun `annotations have correct source and priority`() = runTest {
         coEvery { providerA.isAvailable() } returns true
-        coEvery { providerA.extractEntities(any()) } returns listOf(
-            NerEntity("John", AnnotationType.PERSON_NAME, 0, 4, 0.9f)
+        coEvery { providerA.extractEntities(any()) } returns NerExtractionResult(
+            entities = listOf(NerEntity("John", AnnotationType.PERSON_NAME, 0, 4, 0.9f))
         )
 
         val result = source.annotate("John went home")
 
         assertEquals(200, result[0].priority)
         assertEquals("gemini_nano", result[0].source)
+    }
+
+    // ==================== Tone Cache ====================
+
+    @Test
+    fun `getDetectedTone returns cached tone after annotate`() = runTest {
+        coEvery { providerA.isAvailable() } returns true
+        coEvery { providerA.extractEntities(any()) } returns NerExtractionResult(
+            entities = listOf(NerEntity("John", AnnotationType.PERSON_NAME, 0, 4, 0.9f)),
+            tone = "casual"
+        )
+
+        source.annotate("John went home")
+
+        assertEquals("casual", source.getDetectedTone("John went home"))
+    }
+
+    @Test
+    fun `getDetectedTone returns null for uncached text`() {
+        assertNull(source.getDetectedTone("never annotated"))
+    }
+
+    @Test
+    fun `getDetectedTone returns null when provider has no tone`() = runTest {
+        coEvery { providerA.isAvailable() } returns true
+        coEvery { providerA.extractEntities(any()) } returns NerExtractionResult(
+            entities = listOf(NerEntity("John", AnnotationType.PERSON_NAME, 0, 4, 0.9f)),
+            tone = null
+        )
+
+        source.annotate("John went home")
+
+        assertNull(source.getDetectedTone("John went home"))
     }
 }
