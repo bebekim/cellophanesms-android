@@ -60,6 +60,20 @@ val EntityPersonNameDark = Color(0xFFB39DDB) // Deep Purple 200
 val EntityLocationDark = Color(0xFF4DB6AC)   // Teal 300
 val EntityOrganizationDark = Color(0xFFFFB74D) // Orange 300
 
+// Tone Badge Colors — Light Theme
+val ToneWarm = Color(0xFFE91E63)            // Pink 500
+val ToneFormal = Color(0xFF607D8B)          // BlueGrey 500
+val ToneCasual = Color(0xFF4CAF50)          // Green 500
+val ToneContemplative = Color(0xFF9C27B0)   // Purple 500
+val ToneUrgent = Color(0xFFF44336)          // Red 500
+
+// Tone Badge Colors — Dark Theme
+val ToneWarmDark = Color(0xFFF48FB1)        // Pink 200
+val ToneFormalDark = Color(0xFFB0BEC5)      // BlueGrey 200
+val ToneCasualDark = Color(0xFFA5D6A7)      // Green 200
+val ToneContemplativeDark = Color(0xFFCE93D8) // Purple 200
+val ToneUrgentDark = Color(0xFFEF9A9A)      // Red 200
+
 // Dark Theme Colors
 val PrimaryDark = Color(0xFF90CAF9)
 val PrimaryVariantDark = Color(0xFF42A5F5)
