@@ -108,8 +108,17 @@ dependencies {
     // WorkManager
     implementation(libs.work.runtime)
 
+    // DataStore (for preferences)
+    implementation(libs.androidx.datastore.preferences)
+
+    // Coil (image loading)
+    implementation(libs.coil.compose)
+
     // Security
     implementation(libs.security.crypto)
+
+    // Google AI (Gemini)
+    implementation(libs.generativeai)
 
     // Testing - Unit Tests
     testImplementation(libs.bundles.testing)

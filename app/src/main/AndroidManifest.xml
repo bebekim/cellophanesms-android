@@ -88,9 +88,9 @@
             </intent-filter>
         </service>
 
-        <!-- Main Activity (Launcher) -->
+        <!-- Demo Activity (Launcher) — guest-first onboarding -->
         <activity
-            android:name=".ui.main.MainActivity"
+            android:name=".ui.demo.DemoActivity"
             android:exported="true"
             android:launchMode="singleTop">
             <intent-filter>
@@ -98,6 +98,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Main Activity -->
+        <activity
+            android:name=".ui.main.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop" />
 
         <!-- Thread Activity (Conversation View) -->
         <activity

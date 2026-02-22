@@ -3,18 +3,11 @@
     android:height="48dp"
     android:viewportWidth="48"
     android:viewportHeight="48"
-    android:tint="?attr/colorControlNormal">
-    <!-- Minimal fancy style with thin rounded frame -->
+    android:tint="@android:color/black">
+    <!-- Minimal style circular frame -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="@android:color/black"
+        android:strokeColor="@android:color/white"
         android:strokeWidth="1"
-        android:pathData="M8,4 L40,4 Q44,4 44,8 L44,40 Q44,44 40,44 L8,44 Q4,44 4,40 L4,8 Q4,4 8,4" />
-    <!-- Subtle serif accent marks -->
-    <path
-        android:fillColor="@android:color/black"
-        android:pathData="M22,4 L24,2 L26,4 Z" />
-    <path
-        android:fillColor="@android:color/black"
-        android:pathData="M22,44 L24,46 L26,44 Z" />
+        android:pathData="M24,4 A20,20 0 1,1 24,44 A20,20 0 1,1 24,4" />
 </vector>

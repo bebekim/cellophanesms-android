@@ -85,8 +85,13 @@ class SettingsActivity : ComponentActivity() {
     @Inject
     lateinit var testDataSeeder: TestDataSeeder
 
+    @Inject
+    lateinit var tokenManager: com.cellophanemail.sms.data.remote.TokenManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val isGuest = !tokenManager.hasValidToken()
 
         setContent {
             CellophaneSMSTheme {
@@ -94,6 +99,10 @@ class SettingsActivity : ComponentActivity() {
                     onBackClick = { finish() },
                     onSeedTestData = { testDataSeeder },
                     isDebugBuild = BuildConfig.DEBUG,
+                    isGuest = isGuest,
+                    onNavigateToLogin = {
+                        startActivity(Intent(this, LoginActivity::class.java))
+                    },
                     onLoggedOut = {
                         val intent = Intent(this, LoginActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -113,6 +122,8 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onSeedTestData: () -> TestDataSeeder,
     isDebugBuild: Boolean = false,
+    isGuest: Boolean = false,
+    onNavigateToLogin: () -> Unit = {},
     onLoggedOut: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -359,6 +370,8 @@ fun SettingsScreen(
     if (showNerSettingsDialog) {
         NerSettingsDialog(
             viewModel = viewModel,
+            isGuest = isGuest,
+            onNavigateToLogin = onNavigateToLogin,
             onDismiss = { showNerSettingsDialog = false }
         )
     }
@@ -408,7 +421,7 @@ private fun AccountDialog(
                 is ProfileState.Loaded -> {
                     val profile = profileState.profile
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProfileRow("Email", profile.email)
+                        ProfileRow("Email", profile.email ?: "")
                         profile.username?.let { ProfileRow("Username", it) }
                         profile.subscriptionStatus?.let { ProfileRow("Plan", it) }
                         profile.apiQuota?.let { quota ->
@@ -684,6 +697,8 @@ private fun TextStyleDialog(
 @Composable
 private fun NerSettingsDialog(
     viewModel: SettingsViewModel,
+    isGuest: Boolean = false,
+    onNavigateToLogin: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val selectedMode by viewModel.nerProviderMode.collectAsState()
@@ -696,6 +711,13 @@ private fun NerSettingsDialog(
         onDismissRequest = onDismiss,
         title = { Text("AI Entity Recognition") },
         text = {
+            val activeProvider = when (selectedMode) {
+                NerProviderMode.AUTO -> "Auto-detect"
+                NerProviderMode.GEMINI_NANO -> "Gemini Nano"
+                NerProviderMode.QWEN3_LOCAL -> if (modelDownloaded) "Qwen3 Local" else "Not available"
+                NerProviderMode.CLAUDE_CLOUD -> "Cloud"
+                NerProviderMode.OFF -> "Off"
+            }
             NerProviderSection(
                 selectedMode = selectedMode,
                 onModeSelected = { viewModel.setNerProviderMode(it) },
@@ -708,13 +730,9 @@ private fun NerSettingsDialog(
                     viewModel.startNerModelDownload(MODEL_DOWNLOAD_URL)
                 },
                 onDeleteModel = { viewModel.deleteNerModel() },
-                activeProvider = when (selectedMode) {
-                    NerProviderMode.AUTO -> "Auto-detect"
-                    NerProviderMode.GEMINI_NANO -> "Gemini Nano"
-                    NerProviderMode.QWEN3_LOCAL -> if (modelDownloaded) "Qwen3 Local" else "Not available"
-                    NerProviderMode.CLAUDE_CLOUD -> "Cloud"
-                    NerProviderMode.OFF -> null
-                }
+                activeProvider = activeProvider,
+                isGuest = isGuest,
+                onNavigateToLogin = onNavigateToLogin
             )
         },
         confirmButton = {

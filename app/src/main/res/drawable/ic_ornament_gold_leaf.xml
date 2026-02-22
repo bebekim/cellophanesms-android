@@ -3,23 +3,23 @@
     android:height="48dp"
     android:viewportWidth="48"
     android:viewportHeight="48"
-    android:tint="?attr/colorControlNormal">
-    <!-- Gold leaf style with beveled frame and leaf accents -->
+    android:tint="@android:color/black">
+    <!-- Gold leaf style circular frame -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="@android:color/black"
-        android:strokeWidth="2.5"
-        android:pathData="M6,2 L42,2 L46,6 L46,42 L42,46 L6,46 L2,42 L2,6 Z" />
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.5"
+        android:pathData="M24,4 A20,20 0 1,1 24,44 A20,20 0 1,1 24,4" />
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="@android:color/black"
-        android:strokeWidth="0.5"
-        android:pathData="M8,5 L40,5 L43,8 L43,40 L40,43 L8,43 L5,40 L5,8 Z" />
-    <!-- Leaf accents at corners -->
+        android:fillColor="@android:color/white"
+        android:pathData="M24,2 a2,2 0 1,1 0,4 a2,2 0 1,1 0,-4" />
     <path
-        android:fillColor="@android:color/black"
-        android:pathData="M6,2 Q10,6 6,10 Q4,6 6,2 Z" />
+        android:fillColor="@android:color/white"
+        android:pathData="M24,42 a2,2 0 1,1 0,4 a2,2 0 1,1 0,-4" />
     <path
-        android:fillColor="@android:color/black"
-        android:pathData="M42,2 Q38,6 42,10 Q44,6 42,2 Z" />
+        android:fillColor="@android:color/white"
+        android:pathData="M2,24 a2,2 0 1,1 4,0 a2,2 0 1,1 -4,0" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M42,24 a2,2 0 1,1 4,0 a2,2 0 1,1 -4,0" />
 </vector>

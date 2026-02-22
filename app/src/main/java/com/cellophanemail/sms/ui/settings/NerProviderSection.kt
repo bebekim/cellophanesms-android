@@ -7,12 +7,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -37,7 +41,9 @@ fun NerProviderSection(
     onWifiOnlyChanged: (Boolean) -> Unit,
     onStartDownload: () -> Unit,
     onDeleteModel: () -> Unit,
-    activeProvider: String?
+    activeProvider: String?,
+    isGuest: Boolean = false,
+    onNavigateToLogin: () -> Unit = {}
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -56,12 +62,16 @@ fun NerProviderSection(
 
         // Provider mode radio group
         NerProviderMode.entries.forEach { mode ->
+            val isCloudMode = mode == NerProviderMode.CLAUDE_CLOUD
+            val isLockedForGuest = isCloudMode && isGuest
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .selectable(
                         selected = mode == selectedMode,
-                        onClick = { onModeSelected(mode) },
+                        onClick = {
+                            if (isLockedForGuest) onNavigateToLogin() else onModeSelected(mode)
+                        },
                         role = Role.RadioButton
                     )
                     .padding(vertical = 2.dp),
@@ -69,17 +79,35 @@ fun NerProviderSection(
             ) {
                 RadioButton(
                     selected = mode == selectedMode,
-                    onClick = null
+                    onClick = null,
+                    enabled = !isLockedForGuest
                 )
-                Column(modifier = Modifier.padding(start = 8.dp)) {
+                Column(
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .weight(1f)
+                ) {
                     Text(
                         text = mode.displayLabel(),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isLockedForGuest) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
                     )
                     Text(
-                        text = mode.description(),
+                        text = if (isLockedForGuest) "Requires account" else mode.description(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (isLockedForGuest) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Requires account",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
