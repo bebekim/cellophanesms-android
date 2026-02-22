@@ -11,7 +11,6 @@ import com.cellophanemail.sms.data.remote.NerExtractionRequest
 import com.cellophanemail.sms.data.remote.RenderApi
 import com.cellophanemail.sms.data.repository.MessageRepository
 import com.cellophanemail.sms.domain.annotation.AnnotationPipeline
-import com.cellophanemail.sms.domain.annotation.ner.TieredNerAnnotationSource
 import com.cellophanemail.sms.domain.model.AnnotationType
 import com.cellophanemail.sms.domain.model.IlluminatedStyle
 import com.cellophanemail.sms.domain.model.Message
@@ -40,7 +39,6 @@ class ThreadViewModel @Inject constructor(
     private val notificationHelper: com.cellophanemail.sms.util.NotificationHelper,
     private val contactResolver: ContactResolver,
     private val annotationPipeline: AnnotationPipeline,
-    private val tieredNerSource: TieredNerAnnotationSource,
     private val textRenderingPreferences: TextRenderingPreferences,
     private val renderApi: RenderApi,
     savedStateHandle: SavedStateHandle
@@ -65,13 +63,6 @@ class ThreadViewModel @Inject constructor(
     private val _composingText = MutableStateFlow("")
     val composingText: StateFlow<String> = _composingText.asStateFlow()
 
-    private val _showOriginalDialog = MutableStateFlow<Message?>(null)
-    val showOriginalDialog: StateFlow<Message?> = _showOriginalDialog.asStateFlow()
-
-    // Track which messages have "View Original" toggled on
-    private val _revealedMessageIds = MutableStateFlow<Set<String>>(emptySet())
-    val revealedMessageIds: StateFlow<Set<String>> = _revealedMessageIds.asStateFlow()
-
     // Annotation state — lazily computed per message
     private val _annotationsMap = MutableStateFlow<Map<String, List<TextAnnotation>>>(emptyMap())
     val annotationsMap: StateFlow<Map<String, List<TextAnnotation>>> = _annotationsMap.asStateFlow()
@@ -79,10 +70,6 @@ class ThreadViewModel @Inject constructor(
     // Entity bottom sheet state
     private val _entitySheetState = MutableStateFlow<EntitySheetState?>(null)
     val entitySheetState: StateFlow<EntitySheetState?> = _entitySheetState.asStateFlow()
-
-    // Tone per message — populated after annotations complete
-    private val _toneMap = MutableStateFlow<Map<String, String?>>(emptyMap())
-    val toneMap: StateFlow<Map<String, String?>> = _toneMap.asStateFlow()
 
     // Server-composed Document AST per message (alternative to client-side pipeline)
     private val _serverComposedMap = MutableStateFlow<Map<String, DocumentDto>>(emptyMap())
@@ -133,13 +120,6 @@ class ThreadViewModel @Inject constructor(
                     if (annotations.isNotEmpty()) {
                         _annotationsMap.value = _annotationsMap.value.toMutableMap().apply {
                             put(message.id, annotations)
-                        }
-                        // Query tone after NER annotations are available
-                        val tone = tieredNerSource.getDetectedTone(message.displayContent)
-                        if (tone != null) {
-                            _toneMap.value = _toneMap.value.toMutableMap().apply {
-                                put(message.id, tone)
-                            }
                         }
                     }
                 }
@@ -225,29 +205,9 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
-    fun showOriginalMessage(message: Message) {
-        _showOriginalDialog.value = message
-    }
-
-    fun dismissOriginalDialog() {
-        _showOriginalDialog.value = null
-    }
-
     fun getThreadAddress(): String = address
 
     fun getDisplayName(): String = contactName
-
-    fun toggleMessageReveal(messageId: String) {
-        _revealedMessageIds.value = if (messageId in _revealedMessageIds.value) {
-            _revealedMessageIds.value - messageId
-        } else {
-            _revealedMessageIds.value + messageId
-        }
-    }
-
-    fun isMessageRevealed(messageId: String): Boolean {
-        return messageId in _revealedMessageIds.value
-    }
 
     fun onEntityClick(type: AnnotationType, text: String) {
         _entitySheetState.value = EntitySheetState(type, text)

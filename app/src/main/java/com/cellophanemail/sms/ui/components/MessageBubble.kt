@@ -7,37 +7,30 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cellophanemail.sms.R
+import com.cellophanemail.sms.data.remote.DocumentDto
 import com.cellophanemail.sms.domain.model.AnnotationType
 import com.cellophanemail.sms.domain.model.IlluminatedStyle
 import com.cellophanemail.sms.domain.model.Message
 import com.cellophanemail.sms.domain.model.TextAnnotation
-import com.cellophanemail.sms.domain.model.ToxicityClass
 import com.cellophanemail.sms.ui.components.text.DropCapText
 import com.cellophanemail.sms.ui.components.text.EnrichedMessageText
-import com.cellophanemail.sms.data.remote.DocumentDto
 import com.cellophanemail.sms.ui.components.text.ServerComposedText
-import com.cellophanemail.sms.ui.components.text.ToneBadge
-import com.cellophanemail.sms.ui.theme.BubbleFiltered
 import com.cellophanemail.sms.ui.theme.BubbleIncoming
 import com.cellophanemail.sms.ui.theme.BubbleOutgoing
 import java.text.SimpleDateFormat
@@ -47,26 +40,17 @@ import java.util.Locale
 @Composable
 fun MessageBubble(
     message: Message,
-    showOriginal: Boolean = false,
-    onToggleOriginal: () -> Unit,
-    contactName: String? = null,
     annotations: List<TextAnnotation> = emptyList(),
     illuminatedStyle: IlluminatedStyle? = null,
     entityHighlightsEnabled: Boolean = false,
+    isGuest: Boolean = false,
     onEntityClick: (AnnotationType, String) -> Unit = { _, _ -> },
-    tone: String? = null,
+    onSignInClick: () -> Unit = {},
     serverComposedDocument: DocumentDto? = null,
     modifier: Modifier = Modifier
 ) {
     val isOwn = !message.isIncoming
-    val isFiltered = message.isFiltered && message.isIncoming
-
-    // Determine which content to display
-    val displayText = if (isFiltered && showOriginal) {
-        message.originalContent
-    } else {
-        message.displayContent
-    }
+    val displayText = message.displayContent
 
     Row(
         modifier = modifier
@@ -82,22 +66,11 @@ fun MessageBubble(
                 bottomEnd = if (isOwn) 4.dp else 16.dp
             ),
             colors = CardDefaults.cardColors(
-                containerColor = when {
-                    isOwn -> BubbleOutgoing
-                    isFiltered -> BubbleFiltered
-                    else -> BubbleIncoming
-                }
+                containerColor = if (isOwn) BubbleOutgoing else BubbleIncoming
             ),
             modifier = Modifier.widthIn(max = 300.dp)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                // Filtered Header (only show when not viewing original)
-                if (isFiltered && !showOriginal) {
-                    FilteredMessageHeader(message, contactName)
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Content — conditional rendering based on settings
                 when {
                     serverComposedDocument != null -> {
                         ServerComposedText(
@@ -105,13 +78,54 @@ fun MessageBubble(
                             onEntityClick = onEntityClick
                         )
                     }
-                    illuminatedStyle != null && annotations.isNotEmpty() -> {
+                    illuminatedStyle != null && annotations.isNotEmpty() && !isGuest -> {
                         DropCapText(
                             text = displayText,
                             annotations = annotations,
                             illuminatedStyle = illuminatedStyle,
                             onEntityClick = onEntityClick
                         )
+                    }
+                    illuminatedStyle != null && annotations.isNotEmpty() && isGuest -> {
+                        var nudgeDismissed by remember { mutableStateOf(false) }
+                        EnrichedMessageText(
+                            text = displayText,
+                            annotations = annotations,
+                            onEntityClick = onEntityClick
+                        )
+                        if (!nudgeDismissed) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "✨ Sign in for illuminated reading",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    TextButton(onClick = onSignInClick) {
+                                        Text(
+                                            text = "Sign in",
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                    TextButton(onClick = { nudgeDismissed = true }) {
+                                        Text(
+                                            text = "✕",
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                     entityHighlightsEnabled && annotations.isNotEmpty() -> {
                         EnrichedMessageText(
@@ -129,28 +143,6 @@ fun MessageBubble(
                     }
                 }
 
-                // Toggle Original Button
-                if (isFiltered) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(
-                        onClick = onToggleOriginal,
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text(
-                            text = stringResource(
-                                if (showOriginal) R.string.hide_original else R.string.view_original
-                            ),
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
-
-                // Tone Badge
-                if (tone != null) {
-                    ToneBadge(tone = tone)
-                }
-
-                // Timestamp
                 Text(
                     text = formatMessageTime(message.timestamp),
                     style = MaterialTheme.typography.labelSmall,
@@ -159,46 +151,6 @@ fun MessageBubble(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun FilteredMessageHeader(message: Message, contactName: String? = null) {
-    val displayName = contactName ?: message.address
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.Shield,
-                contentDescription = "Filtered",
-                tint = message.classification?.toColor()
-                    ?: MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Column {
-                Text(
-                    text = stringResource(R.string.filtered_by),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = message.classification?.toColor()
-                        ?: MaterialTheme.colorScheme.primary
-                )
-
-                Text(
-                    text = stringResource(R.string.from_sender, displayName),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp),
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant
-        )
     }
 }
 

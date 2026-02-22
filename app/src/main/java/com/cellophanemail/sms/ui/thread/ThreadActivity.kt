@@ -69,12 +69,10 @@ fun ThreadScreen(
 ) {
     val messages by viewModel.messages.collectAsState()
     val composingText by viewModel.composingText.collectAsState()
-    val revealedMessageIds by viewModel.revealedMessageIds.collectAsState()
     val annotationsMap by viewModel.annotationsMap.collectAsState()
     val illuminatedStyle by viewModel.illuminatedStyle.collectAsState()
     val entityHighlightsEnabled by viewModel.entityHighlightsEnabled.collectAsState()
     val entitySheetState by viewModel.entitySheetState.collectAsState()
-    val toneMap by viewModel.toneMap.collectAsState()
     val serverComposedMap by viewModel.serverComposedMap.collectAsState()
 
     val listState = rememberLazyListState()
@@ -124,18 +122,12 @@ fun ThreadScreen(
                 ) { message ->
                     MessageBubble(
                         message = message,
-                        showOriginal = message.id in revealedMessageIds,
-                        onToggleOriginal = {
-                            viewModel.toggleMessageReveal(message.id)
-                        },
-                        contactName = viewModel.getDisplayName(),
                         annotations = annotationsMap[message.id] ?: emptyList(),
                         illuminatedStyle = illuminatedStyle,
                         entityHighlightsEnabled = entityHighlightsEnabled,
                         onEntityClick = { type, text ->
                             viewModel.onEntityClick(type, text)
                         },
-                        tone = toneMap[message.id],
                         serverComposedDocument = serverComposedMap[message.id]
                     )
                 }
