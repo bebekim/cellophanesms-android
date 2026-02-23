@@ -300,40 +300,9 @@ class TestDataSeeder @Inject constructor(
         val threadId = normalizedPhone.takeLast(10)
         val now = System.currentTimeMillis()
 
-        // Calculate sender summary stats
-        var filteredCount = 0
-        var noiseCount = 0
-        var toxicLogisticsCount = 0
-        var criticismCount = 0
-        var contemptCount = 0
-        var defensivenessCount = 0
-        var stonewallingCount = 0
-        var totalToxicity = 0f
-        var lastFiltered: Long? = null
-
         // Insert messages
         messages.forEachIndexed { index, testMsg ->
             val timestamp = now - (testMsg.daysAgo * 24 * 60 * 60 * 1000L) - (index * 60000) // Stagger by minutes
-            val isFiltered = testMsg.category.startsWith("TOXIC")
-
-            if (isFiltered) {
-                filteredCount++
-                lastFiltered = maxOf(lastFiltered ?: 0, timestamp)
-            }
-            when (testMsg.category) {
-                "TOXIC_NOISE" -> noiseCount++
-                "TOXIC_LOGISTICS" -> toxicLogisticsCount++
-            }
-
-            testMsg.horsemen.forEach { (type, confidence) ->
-                totalToxicity += confidence
-                when (type) {
-                    "CRITICISM" -> criticismCount++
-                    "CONTEMPT" -> contemptCount++
-                    "DEFENSIVENESS" -> defensivenessCount++
-                    "STONEWALLING" -> stonewallingCount++
-                }
-            }
 
             val messageEntity = MessageEntity(
                 id = UUID.randomUUID().toString(),
@@ -344,19 +313,15 @@ class TestDataSeeder @Inject constructor(
                 timestamp = timestamp,
                 isIncoming = true,
                 originalContent = encryption.encrypt(testMsg.body),
-                filteredContent = if (isFiltered) "[Filtered: ${testMsg.horsemen.firstOrNull()?.first ?: "toxic"} detected]" else null,
-                isFiltered = isFiltered,
-                toxicityScore = testMsg.horsemen.maxOfOrNull { it.second },
-                classification = if (isFiltered) "HARMFUL" else "SAFE",
-                horsemenDetected = if (testMsg.horsemen.isNotEmpty()) {
-                    "[${testMsg.horsemen.joinToString(",") { "\"${it.first}\"" }}]"
-                } else null,
-                horsemenConfidences = if (testMsg.horsemen.isNotEmpty()) {
-                    "{${testMsg.horsemen.joinToString(",") { "\"${it.first}\":${it.second}" }}}"
-                } else null,
-                analysisReasoning = testMsg.horsemen.firstOrNull()?.let { "${it.first} detected with ${(it.second * 100).toInt()}% confidence" },
-                category = testMsg.category,
-                severity = testMsg.severity,
+                filteredContent = null,
+                isFiltered = false,
+                toxicityScore = null,
+                classification = "SAFE",
+                horsemenDetected = null,
+                horsemenConfidences = null,
+                analysisReasoning = null,
+                category = null,
+                severity = null,
                 hasLogistics = testMsg.hasLogistics,
                 engineVersion = "v1",
                 analyzedAt = now,
@@ -383,7 +348,7 @@ class TestDataSeeder @Inject constructor(
             lastMessagePreview = latestMessage.body.take(100),
             unreadCount = messages.count { !Random.nextBoolean() },
             messageCount = messages.size,
-            toxicityLevel = if (filteredCount > 0) "HARMFUL" else "SAFE"
+            toxicityLevel = "SAFE"
         )
 
         threadDao.insert(threadEntity)
@@ -394,16 +359,16 @@ class TestDataSeeder @Inject constructor(
             contactName = sender.name,
             contactPhotoUri = sender.photoUri,
             totalMessageCount = messages.size,
-            filteredCount = filteredCount,
-            noiseCount = noiseCount,
-            toxicLogisticsCount = toxicLogisticsCount,
-            criticismCount = criticismCount,
-            contemptCount = contemptCount,
-            defensivenessCount = defensivenessCount,
-            stonewallingCount = stonewallingCount,
-            totalToxicityScore = totalToxicity,
+            filteredCount = 0,
+            noiseCount = 0,
+            toxicLogisticsCount = 0,
+            criticismCount = 0,
+            contemptCount = 0,
+            defensivenessCount = 0,
+            stonewallingCount = 0,
+            totalToxicityScore = 0f,
             lastMessageTimestamp = latestTimestamp,
-            lastFilteredTimestamp = lastFiltered,
+            lastFilteredTimestamp = null,
             engineVersion = "v1",
             createdAt = now,
             updatedAt = now
