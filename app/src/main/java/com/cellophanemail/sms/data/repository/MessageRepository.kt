@@ -272,7 +272,7 @@ class MessageRepository @Inject constructor(
             senderIdNormalized = senderIdNormalized,
             timestamp = timestamp,
             isIncoming = isIncoming,
-            originalContent = encryption.decrypt(originalContent),
+            originalContent = encryption.decryptOrNull(originalContent) ?: "[Message could not be decrypted]",
             filteredContent = filteredContent,
             isFiltered = isFiltered,
             toxicityScore = toxicityScore,

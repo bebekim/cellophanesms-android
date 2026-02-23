@@ -6,6 +6,7 @@ import com.cellophanemail.sms.data.local.dao.ThreadDao
 import com.cellophanemail.sms.data.local.entity.MessageEntity
 import com.cellophanemail.sms.data.local.entity.SenderSummaryEntity
 import com.cellophanemail.sms.data.local.entity.ThreadEntity
+import com.cellophanemail.sms.util.MessageEncryption
 import com.cellophanemail.sms.util.PhoneNumberNormalizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,7 +24,8 @@ class TestDataSeeder @Inject constructor(
     private val messageDao: MessageDao,
     private val threadDao: ThreadDao,
     private val senderSummaryDao: SenderSummaryDao,
-    private val phoneNumberNormalizer: PhoneNumberNormalizer
+    private val phoneNumberNormalizer: PhoneNumberNormalizer,
+    private val encryption: MessageEncryption
 ) {
     suspend fun seedTestData() = withContext(Dispatchers.IO) {
         // Clear existing data first
@@ -341,7 +343,7 @@ class TestDataSeeder @Inject constructor(
                 direction = "INBOUND",
                 timestamp = timestamp,
                 isIncoming = true,
-                originalContent = testMsg.body.toByteArray(Charsets.UTF_8),
+                originalContent = encryption.encrypt(testMsg.body),
                 filteredContent = if (isFiltered) "[Filtered: ${testMsg.horsemen.firstOrNull()?.first ?: "toxic"} detected]" else null,
                 isFiltered = isFiltered,
                 toxicityScore = testMsg.horsemen.maxOfOrNull { it.second },
